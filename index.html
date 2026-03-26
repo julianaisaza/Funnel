@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tierra Grata &amp; Co. — Funnel de Ventas</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { margin: 0; font-family: 'Segoe UI', sans-serif; background: #F0EBE0; }
+    * { box-sizing: border-box; }
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { opacity: 1; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// ─── CONFIGURACIÓN FIREBASE ───────────────────────────────────────────────────
+// Reemplaza estos valores con los de tu proyecto Firebase cuando estés listo
+// para producción. Mientras tanto, la app usa localStorage como base de datos.
+//
+// const firebaseConfig = {
+//   apiKey: "REEMPLAZA_CON_TU_API_KEY",
+//   authDomain: "REEMPLAZA_CON_TU_AUTH_DOMAIN",
+//   projectId: "REEMPLAZA_CON_TU_PROJECT_ID",
+//   storageBucket: "REEMPLAZA_CON_TU_STORAGE_BUCKET",
+//   messagingSenderId: "REEMPLAZA_CON_TU_SENDER_ID",
+//   appId: "REEMPLAZA_CON_TU_APP_ID"
+// };
+// ─────────────────────────────────────────────────────────────────────────────
+
+const { useState, useEffect, useMemo } = React;
+
+// ── Paleta de colores Tierra Grata ──────────────────────────────────────────
+const C = {
+  dark:      '#1A4D5C',
+  medium:    '#007272',
+  light:     '#009494',
+  sage:      '#C8D5C8',
+  cream:     '#F0EBE0',
+  sageLight: '#EAF0EA',
+  dkHover:   '#153E4A',
+};
+
+// ── Proyectos ────────────────────────────────────────────────────────────────
+const PROJECTS = [
+  'Bosketo','Zitizen','Camino Verde','Mágica',
+  'Country Life','Summit','Summit Grand','Ambarte'
+];
+
+// ── Base de datos local (localStorage) ──────────────────────────────────────
+const DB = {
+  get:   (c)        => JSON.parse(localStorage.getItem('tg_'+c)||'[]'),
+  save:  (c, a)     => localStorage.setItem('tg_'+c, JSON.stringify(a)),
+  add:   (c, item)  => {
+    const a = DB.get(c);
+    a.push({...item, _id: Date.now()+Math.random(), _ts: new Date().toISOString()});
+    DB.save(c, a);
+  },
+  query: (c, from, to, proj) =>
+    DB.get(c).filter(d =>
+      d.date >= from && d.date <= to &&
+      (proj === 'Todos' || d.project === proj)
+    ),
+  del:   (c, id)    => DB.save(c, DB.get(c).filter(d => d._id !== id)),
+};
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+const today = () => new Date().toISOString().slice(0,10);
+const fmt   = (d) => {
+  const [y,m,day] = d.split('-');
+  return `${day}/${m}/${y}`;
+};
+const weekStart = () => {
+  const d = new Date();
+  d.setDate(d.getDate() - d.getDay());
+  return d.toISOString().slice(0,10);
+};
+const pct = (num, den) => den > 0 ? Math.round(num/den*100) : 0;
+
+// ── Logo ─────────────────────────────────────────────────────────────────────
+function TGLogo() {
+  return (
+    <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
+      <div style={{
+        width:'40px', height:'40px', borderRadius:'8px',
+        background:'rgba(255,255,255,0.18)',
+        display:'flex', alignItems:'center', justifyContent:'center',
+        fontWeight:'900', fontSize:'15px', color:'white',
+        fontFamily:'Georgia,serif', letterSpacing:'1px',
+        border:'1px solid rgba(255,255,255,0.25)',
+        flexShrink:0,
+      }}>TG</div>
+      <div>
+        <div style={{fontWeight:'900', fontSize:'15px', color:'white', fontFamily:'Georgia,serif', lineHeight:'1.1'}}>
+          Tierra Grata
+        </div>
+        <div style={{fontWeight:'600', fontSize:'9px', color:'rgba(200,213,200,0.85)', letterSpacing:'2.5px'}}>
+          &amp; Co.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Calendario de Hábito ─────────────────────────────────────────────────────
+function HabitCalendar({ collection, project, refreshKey }) {
+  const now = new Date();
+  const [viewYear,  setViewYear]  = useState(now.getFullYear());
+  const [viewMonth, setViewMonth] = useState(now.getMonth()); // 0-based
+
+  const todayStr = today();
+
+  const daysInMonth = new Date(viewYear, viewMonth+1, 0).getDate();
+  const firstDow    = new Date(viewYear, viewMonth, 1).getDay(); // 0=Sun
+
+  // Determine which projects to check
+  const checkProjects = project === 'Todos' ? PROJECTS : [project];
+
+  // Get all records for this collection in this month
+  const fromStr = `${viewYear}-${String(viewMonth+1).padStart(2,'0')}-01`;
+  const toStr   = `${viewYear}-${String(viewMonth+1).padStart(2,'0')}-${String(daysInMonth).padStart(2,'0')}`;
+  const records = DB.query(collection, fromStr, toStr, 'Todos');
+
+  // Build a set: date -> Set of projects that have records
+  const byDate = {};
+  records.forEach(r => {
+    if (!byDate[r.date]) byDate[r.date] = new Set();
+    byDate[r.date].add(r.project);
+  });
+
+  const getStatus = (dayNum) => {
+    const ds = `${viewYear}-${String(viewMonth+1).padStart(2,'0')}-${String(dayNum).padStart(2,'0')}`;
+    if (ds > todayStr) return 'future';
+    if (ds === todayStr) return 'today';
+    const done = byDate[ds] || new Set();
+    const recorded = checkProjects.filter(p => done.has(p)).length;
+    if (recorded === 0) return 'missed';
+    if (recorded === checkProjects.length) return 'done';
+    return 'partial';
+  };
+
+  const statusColor = { done:'#007272', partial:'#D97706', missed:'#DC2626', today:C.sage, future:'#D1D5DB' };
+  const statusLabel = { done:'Completo', partial:'Parcial', missed:'Sin registro', today:'Hoy', future:'Pendiente' };
+
+  const counts = { done:0, partial:0, missed:0 };
+  for (let d=1; d<=daysInMonth; d++) {
+    const s = getStatus(d);
+    if (s in counts) counts[s]++;
+  }
+
+  const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                      'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+  const prevMonth = () => {
+    if (viewMonth === 0) { setViewYear(y => y-1); setViewMonth(11); }
+    else setViewMonth(m => m-1);
+  };
+  const nextMonth = () => {
+    const isCurrentMonth = viewYear === now.getFullYear() && viewMonth === now.getMonth();
+    if (isCurrentMonth) return;
+    if (viewMonth === 11) { setViewYear(y => y+1); setViewMonth(0); }
+    else setViewMonth(m => m+1);
+  };
+
+  const isCurrentMonth = viewYear === now.getFullYear() && viewMonth === now.getMonth();
+
+  return (
+    <div style={{background:'white', borderRadius:'12px', padding:'20px', marginTop:'24px',
+                 boxShadow:'0 1px 6px rgba(0,0,0,0.08)'}}>
+      {/* Header */}
+      <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'16px'}}>
+        <div style={{fontWeight:'700', fontSize:'15px', color:C.dark}}>
+          Registro del Mes
+        </div>
+        <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
+          <button onClick={prevMonth}
+            style={{background:'none', border:'none', cursor:'pointer', fontSize:'18px',
+                    color:C.medium, padding:'0 4px', lineHeight:1}}>&#8249;</button>
+          <span style={{fontWeight:'600', fontSize:'14px', color:C.dark, minWidth:'120px', textAlign:'center'}}>
+            {monthNames[viewMonth]} {viewYear}
+          </span>
+          <button onClick={nextMonth}
+            style={{background:'none', border:'none',
+                    cursor: isCurrentMonth ? 'not-allowed' : 'pointer',
+                    fontSize:'18px', color: isCurrentMonth ? '#D1D5DB' : C.medium,
+                    padding:'0 4px', lineHeight:1}}>&#8250;</button>
+        </div>
+      </div>
+
+      {/* Day-of-week headers */}
+      <div style={{display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:'4px', marginBottom:'6px'}}>
+        {['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'].map(d => (
+          <div key={d} style={{textAlign:'center', fontSize:'11px', fontWeight:'600',
+                               color:'#9CA3AF', padding:'2px 0'}}>{d}</div>
+        ))}
+      </div>
+
+      {/* Calendar grid */}
+      <div style={{display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:'4px'}}>
+        {/* Empty cells for offset */}
+        {Array.from({length: firstDow}).map((_,i) => (
+          <div key={'e'+i} />
+        ))}
+        {Array.from({length: daysInMonth}).map((_,i) => {
+          const dayNum = i+1;
+          const status = getStatus(dayNum);
+          const isToday = `${viewYear}-${String(viewMonth+1).padStart(2,'0')}-${String(dayNum).padStart(2,'0')}` === todayStr;
+          return (
+            <div key={dayNum} title={statusLabel[status]}
+              style={{
+                aspectRatio:'1', display:'flex', alignItems:'center', justifyContent:'center',
+                borderRadius:'50%',
+                background: status === 'future' ? 'transparent' : statusColor[status],
+                border: isToday ? `2px solid ${C.medium}` : '2px solid transparent',
+                color: status === 'future' ? '#9CA3AF' : (status === 'today' ? C.dark : 'white'),
+                fontSize:'12px', fontWeight: isToday ? '700' : '500',
+                cursor:'default',
+              }}>
+              {dayNum}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Legend */}
+      <div style={{display:'flex', gap:'16px', marginTop:'16px', flexWrap:'wrap'}}>
+        {[
+          {key:'done',    label:`Completo (${counts.done})`},
+          {key:'partial', label:`Parcial (${counts.partial})`},
+          {key:'missed',  label:`Sin registro (${counts.missed})`},
+        ].map(({key, label}) => (
+          <div key={key} style={{display:'flex', alignItems:'center', gap:'6px'}}>
+            <div style={{width:'12px', height:'12px', borderRadius:'50%',
+                         background: statusColor[key]}} />
+            <span style={{fontSize:'12px', color:'#6B7280'}}>{label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Tarjeta KPI ──────────────────────────────────────────────────────────────
+function KpiCard({ label, value, sub, color }) {
+  return (
+    <div style={{background:'white', borderRadius:'12px', padding:'18px',
+                 boxShadow:'0 1px 6px rgba(0,0,0,0.08)', flex:'1', minWidth:'140px'}}>
+      <div style={{fontSize:'12px', color:'#6B7280', fontWeight:'600', marginBottom:'6px',
+                   textTransform:'uppercase', letterSpacing:'0.5px'}}>{label}</div>
+      <div style={{fontSize:'32px', fontWeight:'800', color: color || C.dark}}>{value}</div>
+      {sub && <div style={{fontSize:'12px', color:'#9CA3AF', marginTop:'4px'}}>{sub}</div>}
+    </div>
+  );
+}
+
+// ── Barra del funnel ─────────────────────────────────────────────────────────
+function FunnelBar({ label, value, max, color, pctLabel }) {
+  const w = max > 0 ? Math.round(value/max*100) : 0;
+  return (
+    <div style={{marginBottom:'16px'}}>
+      <div style={{display:'flex', justifyContent:'space-between', marginBottom:'4px'}}>
+        <span style={{fontSize:'14px', fontWeight:'600', color:C.dark}}>{label}</span>
+        <span style={{fontSize:'14px', fontWeight:'700', color}}>{value}</span>
+      </div>
+      <div style={{background:'#E5E7EB', borderRadius:'99px', height:'10px'}}>
+        <div style={{background:color, borderRadius:'99px', height:'10px',
+                     width: w+'%', transition:'width 0.5s'}} />
+      </div>
+      {pctLabel && (
+        <div style={{fontSize:'11px', color:'#9CA3AF', marginTop:'2px'}}>{pctLabel}</div>
+      )}
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// TAB: VISITAS
+// ────────────────────────────────────────────────────────────────────────────
+function VisitasTab() {
+  const [project,    setProject]    = useState(PROJECTS[0]);
+  const [date,       setDate]       = useState(today());
+  const [compradores,setCompradores]= useState(0);
+  const [prospectos, setProspectos] = useState(0);
+  const [saved,      setSaved]      = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [calProj,    setCalProj]    = useState('Todos');
+
+  const save = () => {
+    DB.add('visitas', { project, date, compradores: Number(compradores), prospectos: Number(prospectos) });
+    setSaved(true);
+    setRefreshKey(k => k+1);
+    setTimeout(() => setSaved(false), 2500);
+  };
+
+  const records = DB.query('visitas', today(), today(), project);
+  const alreadySaved = records.length > 0;
+
+  return (
+    <div>
+      {/* Form */}
+      <div style={{background:'white', borderRadius:'12px', padding:'24px',
+                   boxShadow:'0 1px 6px rgba(0,0,0,0.08)', marginBottom:'8px'}}>
+        <div style={{fontSize:'13px', color:C.medium, fontWeight:'700', marginBottom:'18px',
+                     padding:'8px 12px', background:C.sageLight, borderRadius:'8px',
+                     borderLeft:`4px solid ${C.medium}`}}>
+          Registro diario obligatorio — aunque el numero sea 0.
+        </div>
+
+        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'16px', marginBottom:'16px'}}>
+          <div>
+            <label style={{fontSize:'13px', fontWeight:'600', color:C.dark, display:'block', marginBottom:'6px'}}>
+              Proyecto
+            </label>
+            <select value={project} onChange={e => setProject(e.target.value)}
+              style={{width:'100%', padding:'10px 12px', borderRadius:'8px',
+                      border:`1.5px solid ${C.sage}`, background:'white', fontSize:'14px', color:C.dark}}>
+              {PROJECTS.map(p => <option key={p}>{p}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={{fontSize:'13px', fontWeight:'600', color:C.dark, display:'block', marginBottom:'6px'}}>
+              Fecha
+            </label>
+            <input type="date" value={date} onChange={e => setDate(e.target.value)}
+              style={{width:'100%', padding:'10px 12px', borderRadius:'8px',
+                      border:`1.5px solid ${C.sage}`, fontSize:'14px', color:C.dark}} />
+          </div>
+        </div>
+
+        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'16px', marginBottom:'20px'}}>
+          <div>
+            <label style={{fontSize:'13px', fontWeight:'600', color:C.dark, display:'block', marginBottom:'6px'}}>
+              Compradores (visitas calificadas)
+            </label>
+            <input type="number" min="0" value={compradores}
+              onChange={e => setCompradores(e.target.value)}
+              style={{width:'100%', padding:'10px 12px', borderRadius:'8px',
+                      border:`1.5px solid ${C.sage}`, fontSize:'20px', fontWeight:'700',
+                      color:C.dark, textAlign:'center'}} />
+          </div>
+          <div>
+            <label style={{fontSize:'13px', fontWeight:'600', color:C.dark, display:'block', marginBottom:'6px'}}>
+              Prospectos (interesados)
+            </label>
+            <input type="number" min="0" value={prospectos}
+              onChange={e => setProspectos(e.target.value)}
+              style={{width:'100%', padding:'10px 12px', borderRadius:'8px',
+                      border:`1.5px solid ${C.sage}`, fontSize:'20px', fontWeight:'700',
+                      color:C.dark, textAlign:'center'}} />
+          </div>
+        </div>
+
+        {alreadySaved && (
+          <div style={{fontSize:'13px', color:C.medium, background:C.sageLight,
+                       padding:'8px 12px', borderRadius:'8px', marginBottom:'12px'}}>
+            Ya existe un registro para {project} en la fecha seleccionada. Puedes agregar otro o ver el historial en el Dashboard.
+          </div>
+        )}
+
+        <button onClick={save}
+          style={{width:'100%', padding:'14px', background: saved ? C.medium : C.dark,
+                  color:'white', border:'none', borderRadius:'10px', fontSize:'15px',
+                  fontWeight:'700', cursor:'pointer', transition:'background 0.2s'}}>
+          {saved ? '¡Guardado!' : 'Guardar Visitas del Dia'}
+        </button>
+      </div>
+
+      {/* Calendar habit tracker */}
+      <div style={{marginBottom:'8px'}}>
+        <div style={{display:'flex', alignItems:'center', gap:'12px', marginTop:'8px'}}>
+          <span style={{fontSize:'13px', fontWeight:'600', color:C.dark}}>Ver hábito de:</span>
+          <select value={calProj} onChange={e => setCalProj(e.target.value)}
+            style={{padding:'6px 10px', borderRadius:'8px', border:`1.5px solid ${C.sage}`,
+                    background:'white', fontSize:'13px', color:C.dark}}>
+            <option value="Todos">Todos los proyectos</option>
+            {PROJECTS.map(p => <option key={p}>{p}</option>)}
+          </select>
+        </div>
+        <HabitCalendar collection="visitas" project={calProj} refreshKey={refreshKey} />
+      </div>
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// TAB: LEADS
+// ────────────────────────────────────────────────────────────────────────────
+function LeadsTab() {
+  const [project,    setProject]    = useState(PROJECTS[0]);
+  const [date,       setDate]       = useState(today());
+  const [keybe,      setKeybe]      = useState(0);
+  const [sico,       setSico]       = useState(0);
+  const [saved,      setSaved]      = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [calProj,    setCalProj]    = useState('Todos');
+
+  const save = () => {
+    DB.add('leads', { project, date, keybe: Number(keybe), sico: Number(sico) });
+    setSaved(true);
+    setRefreshKey(k => k+1);
+    setTimeout(() => setSaved(false), 2500);
+  };
+
+  return (
+    <div>
+      <div style={{background:'white', borderRadius:'12px', padding:'24px',
+                   boxShadow:'0 1px 6px rgba(0,0,0,0.08)', marginBottom:'8px'}}>
+        <div style={{fontSize:'13px', color:C.medium, fontWeight:'700', marginBottom:'18px',
+                     padding:'8px 12px', background:C.sageLight, borderRadius:'8px',
+                     borderLeft:`4px solid ${C.medium}`}}>
+          Registro diario obligatorio — aunque el numero sea 0.
+        </div>
+
+        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'16px', marginBottom:'16px'}}>
+          <div>
+            <label style={{fontSize:'13px', fontWeight:'600', color:C.dark, display:'block', marginBottom:'6px'}}>
+              Proyecto
+            </label>
+            <select value={project} onChange={e => setProject(e.target.value)}
+              style={{width:'100%', padding:'10px 12px', borderRadius:'8px',
+                      border:`1.5px solid ${C.sage}`, background:'white', fontSize:'14px', color:C.dark}}>
+              {PROJECTS.map(p => <option key={p}>{p}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={{fontSize:'13px', fontWeight:'600', color:C.dark, display:'block', marginBottom:'6px'}}>
+              Fecha
+            </label>
+            <input type="date" value={date} onChange={e => setDate(e.target.value)}
+              style={{width:'100%', padding:'10px 12px', borderRadius:'8px',
+                      border:`1.5px solid ${C.sage}`, fontSize:'14px', color:C.dark}} />
+          </div>
+        </div>
+
+        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'16px', marginBottom:'20px'}}>
+          <div>
+            <label style={{fontSize:'13px', fontWeight:'600', color:C.dark, display:'block', marginBottom:'6px'}}>
+              Leads Keybe
+            </label>
+            <input type="number" min="0" value={keybe}
+              onChange={e => setKeybe(e.target.value)}
+              style={{width:'100%', padding:'10px 12px', borderRadius:'8px',
+                      border:`1.5px solid ${C.sage}`, fontSize:'20px', fontWeight:'700',
+                      color:C.dark, textAlign:'center'}} />
+          </div>
+          <div>
+            <label style={{fontSize:'13px', fontWeight:'600', color:C.dark, display:'block', marginBottom:'6px'}}>
+              Leads Sico
+            </label>
+            <input type="number" min="0" value={sico}
+              onChange={e => setSico(e.target.value)}
+              style={{width:'100%', padding:'10px 12px', borderRadius:'8px',
+                      border:`1.5px solid ${C.sage}`, fontSize:'20px', fontWeight:'700',
+                      color:C.dark, textAlign:'center'}} />
+          </div>
+        </div>
+
+        <button onClick={save}
+          style={{width:'100%', padding:'14px', background: saved ? C.medium : C.dark,
+                  color:'white', border:'none', borderRadius:'10px', fontSize:'15px',
+                  fontWeight:'700', cursor:'pointer', transition:'background 0.2s'}}>
+          {saved ? '¡Guardado!' : 'Guardar Leads del Dia'}
+        </button>
+      </div>
+
+      {/* Calendar */}
+      <div style={{marginBottom:'8px'}}>
+        <div style={{display:'flex', alignItems:'center', gap:'12px', marginTop:'8px'}}>
+          <span style={{fontSize:'13px', fontWeight:'600', color:C.dark}}>Ver hábito de:</span>
+          <select value={calProj} onChange={e => setCalProj(e.target.value)}
+            style={{padding:'6px 10px', borderRadius:'8px', border:`1.5px solid ${C.sage}`,
+                    background:'white', fontSize:'13px', color:C.dark}}>
+            <option value="Todos">Todos los proyectos</option>
+            {PROJECTS.map(p => <option key={p}>{p}</option>)}
+          </select>
+        </div>
+        <HabitCalendar collection="leads" project={calProj} refreshKey={refreshKey} />
+      </div>
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// TAB: VENTAS
+// ────────────────────────────────────────────────────────────────────────────
+function VentasTab() {
+  const [project, setProject] = useState(PROJECTS[0]);
+  const [date,    setDate]    = useState(weekStart());
+  const [ventas,  setVentas]  = useState(0);
+  const [saved,   setSaved]   = useState(false);
+  const [, forceUpdate]       = useState(0);
+
+  const save = () => {
+    DB.add('ventas', { project, date, ventas: Number(ventas) });
+    setSaved(true);
+    forceUpdate(n => n+1);
+    setTimeout(() => setSaved(false), 2500);
+  };
+
+  const records = DB.get('ventas').slice(-20).reverse();
+
+  return (
+    <div>
+      <div style={{background:'white', borderRadius:'12px', padding:'24px',
+                   boxShadow:'0 1px 6px rgba(0,0,0,0.08)', marginBottom:'20px'}}>
+        <div style={{fontSize:'13px', color:'#92400E', fontWeight:'600', marginBottom:'18px',
+                     padding:'8px 12px', background:'#FEF3C7', borderRadius:'8px',
+                     borderLeft:'4px solid #D97706'}}>
+          Solo administradores pueden ingresar cierres de ventas.
+        </div>
+
+        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'16px', marginBottom:'16px'}}>
+          <div>
+            <label style={{fontSize:'13px', fontWeight:'600', color:C.dark, display:'block', marginBottom:'6px'}}>
+              Proyecto
+            </label>
+            <select value={project} onChange={e => setProject(e.target.value)}
+              style={{width:'100%', padding:'10px 12px', borderRadius:'8px',
+                      border:`1.5px solid ${C.sage}`, background:'white', fontSize:'14px', color:C.dark}}>
+              {PROJECTS.map(p => <option key={p}>{p}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={{fontSize:'13px', fontWeight:'600', color:C.dark, display:'block', marginBottom:'6px'}}>
+              Semana (fecha de corte)
+            </label>
+            <input type="date" value={date} onChange={e => setDate(e.target.value)}
+              style={{width:'100%', padding:'10px 12px', borderRadius:'8px',
+                      border:`1.5px solid ${C.sage}`, fontSize:'14px', color:C.dark}} />
+          </div>
+        </div>
+
+        <div style={{marginBottom:'20px'}}>
+          <label style={{fontSize:'13px', fontWeight:'600', color:C.dark, display:'block', marginBottom:'6px'}}>
+            Numero de ventas cerradas
+          </label>
+          <input type="number" min="0" value={ventas}
+            onChange={e => setVentas(e.target.value)}
+            style={{width:'100%', padding:'12px', borderRadius:'8px',
+                    border:`1.5px solid ${C.sage}`, fontSize:'28px', fontWeight:'700',
+                    color:C.dark, textAlign:'center'}} />
+        </div>
+
+        <button onClick={save}
+          style={{width:'100%', padding:'14px', background: saved ? C.medium : C.dark,
+                  color:'white', border:'none', borderRadius:'10px', fontSize:'15px',
+                  fontWeight:'700', cursor:'pointer'}}>
+          {saved ? '¡Guardado!' : 'Guardar Cierre Semanal'}
+        </button>
+      </div>
+
+      {/* Recent records */}
+      {records.length > 0 && (
+        <div style={{background:'white', borderRadius:'12px', padding:'20px',
+                     boxShadow:'0 1px 6px rgba(0,0,0,0.08)'}}>
+          <div style={{fontWeight:'700', color:C.dark, marginBottom:'12px', fontSize:'14px'}}>
+            Registros recientes
+          </div>
+          <table style={{width:'100%', borderCollapse:'collapse', fontSize:'13px'}}>
+            <thead>
+              <tr style={{background:C.sageLight}}>
+                {['Proyecto','Fecha','Ventas',''].map(h => (
+                  <th key={h} style={{padding:'8px 10px', textAlign:'left', fontWeight:'600',
+                                      color:C.dark, borderRadius:'4px'}}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {records.map(r => (
+                <tr key={r._id} style={{borderBottom:`1px solid ${C.sageLight}`}}>
+                  <td style={{padding:'8px 10px', color:C.dark}}>{r.project}</td>
+                  <td style={{padding:'8px 10px', color:'#6B7280'}}>{fmt(r.date)}</td>
+                  <td style={{padding:'8px 10px', fontWeight:'700', color:C.medium}}>{r.ventas}</td>
+                  <td style={{padding:'8px 10px'}}>
+                    <button onClick={() => { DB.del('ventas', r._id); forceUpdate(n => n+1); }}
+                      style={{background:'none', border:'none', cursor:'pointer',
+                              color:'#EF4444', fontSize:'12px'}}>
+                      Eliminar
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// TAB: DASHBOARD
+// ────────────────────────────────────────────────────────────────────────────
+function DashboardTab() {
+  const [proj,  setProj]  = useState('Todos');
+  const [from,  setFrom]  = useState(() => {
+    const d = new Date(); d.setDate(1);
+    return d.toISOString().slice(0,10);
+  });
+  const [to,    setTo]    = useState(today());
+  const [meta,  setMeta]  = useState(10);
+
+  const visitas = DB.query('visitas', from, to, proj);
+  const leads   = DB.query('leads',   from, to, proj);
+  const ventas  = DB.query('ventas',  from, to, proj);
+
+  const totLeads       = leads.reduce((s,r) => s + r.keybe + r.sico, 0);
+  const totVisitas     = visitas.reduce((s,r) => s + r.compradores + r.prospectos, 0);
+  const totCompradores = visitas.reduce((s,r) => s + r.compradores, 0);
+  const totVentas      = ventas.reduce((s,r) => s + r.ventas, 0);
+  const maxFunnel      = Math.max(totLeads, totVisitas, totVentas, 1);
+
+  // Per-project breakdown
+  const byProject = PROJECTS.map(p => {
+    const vRows = DB.query('visitas', from, to, p);
+    const lRows = DB.query('leads',   from, to, p);
+    const sRows = DB.query('ventas',  from, to, p);
+    const l = lRows.reduce((s,r) => s + r.keybe + r.sico, 0);
+    const v = vRows.reduce((s,r) => s + r.compradores + r.prospectos, 0);
+    const s = sRows.reduce((s,r) => s + r.ventas, 0);
+    return {p, l, v, s};
+  }).filter(x => x.l > 0 || x.v > 0 || x.s > 0);
+
+  return (
+    <div>
+      {/* Filters */}
+      <div style={{background:'white', borderRadius:'12px', padding:'16px',
+                   boxShadow:'0 1px 6px rgba(0,0,0,0.08)', marginBottom:'20px'}}>
+        <div style={{display:'flex', flexWrap:'wrap', gap:'12px', alignItems:'flex-end'}}>
+          <div>
+            <label style={{fontSize:'12px', fontWeight:'600', color:'#6B7280',
+                           display:'block', marginBottom:'4px'}}>PROYECTO</label>
+            <select value={proj} onChange={e => setProj(e.target.value)}
+              style={{padding:'8px 12px', borderRadius:'8px', border:`1.5px solid ${C.sage}`,
+                      fontSize:'14px', color:C.dark, background:'white'}}>
+              <option value="Todos">Todos</option>
+              {PROJECTS.map(p => <option key={p}>{p}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={{fontSize:'12px', fontWeight:'600', color:'#6B7280',
+                           display:'block', marginBottom:'4px'}}>DESDE</label>
+            <input type="date" value={from} onChange={e => setFrom(e.target.value)}
+              style={{padding:'8px 12px', borderRadius:'8px', border:`1.5px solid ${C.sage}`,
+                      fontSize:'14px', color:C.dark}} />
+          </div>
+          <div>
+            <label style={{fontSize:'12px', fontWeight:'600', color:'#6B7280',
+                           display:'block', marginBottom:'4px'}}>HASTA</label>
+            <input type="date" value={to} onChange={e => setTo(e.target.value)}
+              style={{padding:'8px 12px', borderRadius:'8px', border:`1.5px solid ${C.sage}`,
+                      fontSize:'14px', color:C.dark}} />
+          </div>
+        </div>
+      </div>
+
+      {/* KPI Cards */}
+      <div style={{display:'flex', flexWrap:'wrap', gap:'12px', marginBottom:'20px'}}>
+        <KpiCard label="Total Leads"     value={totLeads}       color={C.light} />
+        <KpiCard label="Visitas"         value={totVisitas}     color={C.medium} />
+        <KpiCard label="Compradores"     value={totCompradores} color={C.dark} />
+        <KpiCard label="Ventas Cerradas" value={totVentas}      color="#D97706" />
+      </div>
+
+      {/* Funnel */}
+      <div style={{background:'white', borderRadius:'12px', padding:'24px',
+                   boxShadow:'0 1px 6px rgba(0,0,0,0.08)', marginBottom:'20px'}}>
+        <div style={{fontWeight:'700', color:C.dark, marginBottom:'20px', fontSize:'15px'}}>
+          Funnel de Conversion
+        </div>
+        <FunnelBar label="Leads" value={totLeads} max={maxFunnel} color={C.light} />
+        <FunnelBar label="Visitas" value={totVisitas} max={maxFunnel} color={C.medium}
+          pctLabel={`${pct(totVisitas, totLeads)}% de leads llegaron a visita`} />
+        <FunnelBar label="Compradores Calificados" value={totCompradores} max={maxFunnel} color={C.dark}
+          pctLabel={`${pct(totCompradores, totVisitas)}% de visitas calificadas`} />
+        <FunnelBar label="Ventas Cerradas" value={totVentas} max={maxFunnel} color="#D97706"
+          pctLabel={`${pct(totVentas, totCompradores)}% de compradores cerraron`} />
+      </div>
+
+      {/* Meta calculator */}
+      <div style={{background:'white', borderRadius:'12px', padding:'24px',
+                   boxShadow:'0 1px 6px rgba(0,0,0,0.08)', marginBottom:'20px'}}>
+        <div style={{fontWeight:'700', color:C.dark, marginBottom:'16px', fontSize:'15px'}}>
+          Calculadora de Meta
+        </div>
+        <div style={{display:'flex', alignItems:'center', gap:'12px', flexWrap:'wrap'}}>
+          <label style={{fontSize:'14px', fontWeight:'600', color:C.dark}}>Meta de ventas:</label>
+          <input type="number" min="1" value={meta} onChange={e => setMeta(Number(e.target.value))}
+            style={{width:'80px', padding:'8px', borderRadius:'8px', border:`1.5px solid ${C.sage}`,
+                    fontSize:'18px', fontWeight:'700', textAlign:'center', color:C.dark}} />
+        </div>
+        <div style={{marginTop:'16px', display:'flex', flexWrap:'wrap', gap:'12px'}}>
+          {[
+            { label:'Leads necesarios',  val: totVentas > 0 ? Math.ceil(meta * totLeads / totVentas) : '—' },
+            { label:'Visitas necesarias', val: totVentas > 0 ? Math.ceil(meta * totVisitas / totVentas) : '—' },
+            { label:'Avance actual',      val: `${totVentas} / ${meta}` },
+            { label:'Faltan',             val: Math.max(0, meta - totVentas) },
+          ].map(({label, val}) => (
+            <div key={label} style={{background:C.sageLight, borderRadius:'10px',
+                                     padding:'14px 18px', flex:'1', minWidth:'120px'}}>
+              <div style={{fontSize:'11px', color:'#6B7280', fontWeight:'600',
+                           textTransform:'uppercase', marginBottom:'4px'}}>{label}</div>
+              <div style={{fontSize:'22px', fontWeight:'800', color:C.dark}}>{val}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Per-project table */}
+      {byProject.length > 0 && (
+        <div style={{background:'white', borderRadius:'12px', padding:'24px',
+                     boxShadow:'0 1px 6px rgba(0,0,0,0.08)'}}>
+          <div style={{fontWeight:'700', color:C.dark, marginBottom:'16px', fontSize:'15px'}}>
+            Comparativo por Proyecto
+          </div>
+          <div style={{overflowX:'auto'}}>
+            <table style={{width:'100%', borderCollapse:'collapse', fontSize:'13px'}}>
+              <thead>
+                <tr style={{background:C.sageLight}}>
+                  {['Proyecto','Leads','Visitas','Ventas','Conv. L→V','Conv. V→C'].map(h => (
+                    <th key={h} style={{padding:'10px 12px', textAlign:'left', fontWeight:'700',
+                                        color:C.dark}}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {byProject.map(({p,l,v,s}) => (
+                  <tr key={p} style={{borderBottom:`1px solid ${C.sageLight}`}}>
+                    <td style={{padding:'10px 12px', fontWeight:'600', color:C.dark}}>{p}</td>
+                    <td style={{padding:'10px 12px', color:C.light,   fontWeight:'700'}}>{l}</td>
+                    <td style={{padding:'10px 12px', color:C.medium,  fontWeight:'700'}}>{v}</td>
+                    <td style={{padding:'10px 12px', color:'#D97706', fontWeight:'700'}}>{s}</td>
+                    <td style={{padding:'10px 12px', color:'#6B7280'}}>{pct(v,l)}%</td>
+                    <td style={{padding:'10px 12px', color:'#6B7280'}}>{pct(s,v)}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {byProject.length === 0 && (
+        <div style={{textAlign:'center', padding:'48px', color:'#9CA3AF', fontSize:'15px'}}>
+          No hay datos para el rango y proyecto seleccionado.
+          <br /><span style={{fontSize:'13px'}}>Ingresa registros en Visitas, Leads y Ventas.</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// APP PRINCIPAL
+// ────────────────────────────────────────────────────────────────────────────
+const TABS = [
+  { id:'visitas',   label:'Visitas' },
+  { id:'leads',     label:'Leads' },
+  { id:'ventas',    label:'Ventas' },
+  { id:'dashboard', label:'Dashboard' },
+];
+
+function App() {
+  const [tab, setTab] = useState('visitas');
+
+  return (
+    <div style={{minHeight:'100vh', background:C.cream}}>
+      {/* Header */}
+      <div style={{background:C.dark, padding:'16px 24px',
+                   boxShadow:'0 2px 8px rgba(26,77,92,0.25)'}}>
+        <div style={{maxWidth:'780px', margin:'0 auto',
+                     display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+          <TGLogo />
+          <div style={{fontSize:'11px', color:'rgba(200,213,200,0.7)', fontWeight:'500',
+                       letterSpacing:'0.5px', textAlign:'right'}}>
+            Funnel de Ventas<br />
+            <span style={{fontSize:'10px'}}>v1.0 — Prototipo</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Tab navigation */}
+      <div style={{background:C.dark, borderTop:'1px solid rgba(255,255,255,0.08)'}}>
+        <div style={{maxWidth:'780px', margin:'0 auto', display:'flex'}}>
+          {TABS.map(t => (
+            <button key={t.id} onClick={() => setTab(t.id)}
+              style={{
+                flex:1, padding:'13px 8px', border:'none', cursor:'pointer',
+                fontSize:'13px', fontWeight:'700', letterSpacing:'0.3px',
+                background: tab === t.id ? C.medium : 'transparent',
+                color: tab === t.id ? 'white' : 'rgba(200,213,200,0.65)',
+                borderBottom: tab === t.id ? `3px solid ${C.light}` : '3px solid transparent',
+                transition:'all 0.15s',
+              }}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Content */}
+      <div style={{maxWidth:'780px', margin:'0 auto', padding:'24px 16px'}}>
+        {tab === 'visitas'   && <VisitasTab />}
+        {tab === 'leads'     && <LeadsTab />}
+        {tab === 'ventas'    && <VentasTab />}
+        {tab === 'dashboard' && <DashboardTab />}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
