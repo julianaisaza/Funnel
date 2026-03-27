@@ -262,7 +262,7 @@ function VisitasTab() {
               style={{...inp,fontSize:'20px',fontWeight:'700',textAlign:'center'}}/>
           </div>
           <div>
-            <label style={{fontSize:'13px',fontWeight:'600',color:C.dark,display:'block',marginBottom:'6px'}}>Prospectos</label>
+            <label style={{fontSize:'13px',fontWeight:'600',color:C.dark,display:'block',marginBottom:'6px'}}>Prospectos (Visita única)</label>
             <input type="number" min="0" value={prospectos} onChange={e=>setProspectos(e.target.value)}
               style={{...inp,fontSize:'20px',fontWeight:'700',textAlign:'center'}}/>
           </div>
@@ -329,12 +329,12 @@ function LeadsTab() {
         </div>
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'16px',marginBottom:'20px'}}>
           <div>
-            <label style={{fontSize:'13px',fontWeight:'600',color:C.dark,display:'block',marginBottom:'6px'}}>Leads Keybe</label>
+            <label style={{fontSize:'13px',fontWeight:'600',color:C.dark,display:'block',marginBottom:'6px'}}>Prospectos Keybe</label>
             <input type="number" min="0" value={keybe} onChange={e=>setKeybe(e.target.value)}
               style={{...inp,fontSize:'20px',fontWeight:'700',textAlign:'center'}}/>
           </div>
           <div>
-            <label style={{fontSize:'13px',fontWeight:'600',color:C.dark,display:'block',marginBottom:'6px'}}>Leads Sico</label>
+            <label style={{fontSize:'13px',fontWeight:'600',color:C.dark,display:'block',marginBottom:'6px'}}>Prospectos Sico</label>
             <input type="number" min="0" value={sico} onChange={e=>setSico(e.target.value)}
               style={{...inp,fontSize:'20px',fontWeight:'700',textAlign:'center'}}/>
           </div>
@@ -342,7 +342,7 @@ function LeadsTab() {
         <button onClick={save} disabled={saving} style={{width:'100%',padding:'14px',
           background:saved?C.medium:saving?'#6B9FAC':C.dark,color:'white',border:'none',
           borderRadius:'10px',fontSize:'15px',fontWeight:'700',cursor:saving?'not-allowed':'pointer',transition:'background 0.2s'}}>
-          {saved?'¡Guardado!':saving?'Guardando...':'Guardar Leads del Dia'}
+          {saved?'¡Guardado!':saving?'Guardando...':'Guardar Prospectos del Dia'}
         </button>
       </div>
       <div style={{marginBottom:'8px'}}>
@@ -514,15 +514,15 @@ function DashboardTab({ onGoToMetas }) {
       {loading ? <Spinner/> : <>
         <div style={{display:'flex',flexWrap:'wrap',gap:'12px',marginBottom:'20px'}}>
           <KpiCard label="Total Leads"     value={totLeads}       color={C.light}/>
-          <KpiCard label="Prospectos"      value={totProspectos}  color={C.medium}/>
-          <KpiCard label="Compradores"     value={totCompradores} color={C.dark}/>
+          <KpiCard label="Visitas prospectos" value={totProspectos}  color={C.medium}/>
+          <KpiCard label="Visitas compradores" value={totCompradores} color={C.dark}/>
           <KpiCard label="Ventas Cerradas" value={totVentas}      color="#D97706"/>
         </div>
 
         <div style={{background:'white',borderRadius:'12px',padding:'24px',boxShadow:'0 1px 6px rgba(0,0,0,0.08)',marginBottom:'20px'}}>
           <div style={{fontWeight:'700',color:C.dark,marginBottom:'20px',fontSize:'15px'}}>Funnel de Conversion</div>
           <FunnelBar label="Leads" value={totLeads} max={maxFunnel} color={C.light}/>
-          <FunnelBar label="Prospectos (visitas)" value={totProspectos} max={maxFunnel} color={C.medium}
+          <FunnelBar label="Visitas de prospectos" value={totProspectos} max={maxFunnel} color={C.medium}
             pctLabel={`${pct(totProspectos,totLeads)}% de leads llegaron a visita`}/>
           <FunnelBar label="Ventas Cerradas" value={totVentas} max={maxFunnel} color="#D97706"
             pctLabel={`${pct(totVentas,totProspectos)}% de prospectos cerraron venta`}/>
@@ -813,7 +813,7 @@ function MetasVentasTab() {
 
 const TABS = [
   {id:'visitas',   label:'Visitas'},
-  {id:'leads',     label:'Leads'},
+  {id:'leads',     label:'Prospectos'},
   {id:'ventas',    label:'Ventas'},
   {id:'metas',     label:'Metas de Venta'},
   {id:'dashboard', label:'Dashboard'},
