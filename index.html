@@ -98,12 +98,13 @@ function Spinner() {
   );
 }
 
-function HabitCalendar({ collection, project, refreshKey }) {
+function HabitCalendar({ project, refreshKey }) {
   const now = new Date();
-  const [viewYear,setViewYear]   = useState(now.getFullYear());
-  const [viewMonth,setViewMonth] = useState(now.getMonth());
-  const [records,setRecords]     = useState([]);
-  const [loading,setLoading]     = useState(false);
+  const [viewYear,setViewYear]     = useState(now.getFullYear());
+  const [viewMonth,setViewMonth]   = useState(now.getMonth());
+  const [visitasRec,setVisitasRec] = useState([]);
+  const [leadsRec,setLeadsRec]     = useState([]);
+  const [loading,setLoading]       = useState(false);
   const todayStr    = today();
   const daysInMonth = new Date(viewYear,viewMonth+1,0).getDate();
   const firstDow    = new Date(viewYear,viewMonth,1).getDay();
@@ -114,34 +115,51 @@ function HabitCalendar({ collection, project, refreshKey }) {
       setLoading(true);
       const f = `${viewYear}-${String(viewMonth+1).padStart(2,'0')}-01`;
       const t = `${viewYear}-${String(viewMonth+1).padStart(2,'0')}-${String(daysInMonth).padStart(2,'0')}`;
-      try { const data = await DB.query(collection,f,t,'Todos'); if (!cancelled) setRecords(data); }
-      catch(e) { console.error(e); }
+      try {
+        const [vData, lData] = await Promise.all([
+          DB.query('visitas', f, t, 'Todos'),
+          DB.query('leads',   f, t, 'Todos'),
+        ]);
+        if (!cancelled) { setVisitasRec(vData); setLeadsRec(lData); }
+      } catch(e) { console.error(e); }
       if (!cancelled) setLoading(false);
     };
     load(); return () => { cancelled=true; };
-  }, [collection,project,refreshKey,viewYear,viewMonth,daysInMonth]);
+  }, [project, refreshKey, viewYear, viewMonth, daysInMonth]);
 
   const checkProjects = project==='Todos' ? PROJECTS : [project];
-  const byDate = {};
-  records.forEach(r => {
+
+  // Índice: qué proyectos registraron visitas / leads por fecha
+  const visitasByDate = {};
+  visitasRec.forEach(r => {
     const d=(r.date||'').slice(0,10);
-    if (!byDate[d]) byDate[d]=new Set();
-    byDate[d].add(r.project);
+    if (!visitasByDate[d]) visitasByDate[d]=new Set();
+    visitasByDate[d].add(r.project);
   });
+  const leadsByDate = {};
+  leadsRec.forEach(r => {
+    const d=(r.date||'').slice(0,10);
+    if (!leadsByDate[d]) leadsByDate[d]=new Set();
+    leadsByDate[d].add(r.project);
+  });
+
+  // Completo = proyecto tiene registro en AMBAS tablas ese día
   const getStatus = (n) => {
     const ds=`${viewYear}-${String(viewMonth+1).padStart(2,'0')}-${String(n).padStart(2,'0')}`;
-    if (ds>todayStr) return 'future';
-    if (ds===todayStr) return 'today';
-    const done=byDate[ds]||new Set();
-    const rec=checkProjects.filter(p=>done.has(p)).length;
-    if (rec===0) return 'missed';
-    if (rec===checkProjects.length) return 'done';
-    return 'partial';
+    if (ds > todayStr) return 'future';
+    const vSet = visitasByDate[ds] || new Set();
+    const lSet = leadsByDate[ds]   || new Set();
+    const withBoth = checkProjects.filter(p => vSet.has(p) && lSet.has(p)).length;
+    const withAny  = checkProjects.filter(p => vSet.has(p) || lSet.has(p)).length;
+    if (withBoth === checkProjects.length) return 'done';
+    if (withAny  > 0)                      return 'partial';
+    return 'missed';
   };
-  const statusColor = {done:'#007272',partial:'#D97706',missed:'#DC2626',today:C.sage,future:'#D1D5DB'};
-  const statusLabel = {done:'Completo',partial:'Parcial',missed:'Sin registro',today:'Hoy',future:'Pendiente'};
-  const counts = {done:0,partial:0,missed:0};
-  for (let d=1;d<=daysInMonth;d++) { const s=getStatus(d); if (s in counts) counts[s]++; }
+
+  const statusColor = {done:'#007272', partial:'#D97706', missed:'#DC2626', future:'#D1D5DB'};
+  const statusLabel = {done:'Completo (visitas + prospectos)', partial:'Parcial (falta un registro)', missed:'Sin registro', future:'Pendiente'};
+  const counts = {done:0, partial:0, missed:0};
+  for (let d=1; d<=daysInMonth; d++) { const s=getStatus(d); if (s in counts) counts[s]++; }
   const isCurrent = viewYear===now.getFullYear() && viewMonth===now.getMonth();
   const prevM = () => { if (viewMonth===0){setViewYear(y=>y-1);setViewMonth(11);}else setViewMonth(m=>m-1); };
   const nextM = () => { if (isCurrent) return; if (viewMonth===11){setViewYear(y=>y+1);setViewMonth(0);}else setViewMonth(m=>m+1); };
@@ -149,7 +167,10 @@ function HabitCalendar({ collection, project, refreshKey }) {
   return (
     <div style={{background:'white',borderRadius:'12px',padding:'20px',marginTop:'24px',boxShadow:'0 1px 6px rgba(0,0,0,0.08)'}}>
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'16px'}}>
-        <div style={{fontWeight:'700',fontSize:'15px',color:C.dark}}>Registro del Mes</div>
+        <div>
+          <div style={{fontWeight:'700',fontSize:'15px',color:C.dark}}>Registro del Mes</div>
+          <div style={{fontSize:'11px',color:'#9CA3AF',marginTop:'2px'}}>✓ Completo = visitas + prospectos registrados</div>
+        </div>
         <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
           <button onClick={prevM} style={{background:'none',border:'none',cursor:'pointer',fontSize:'18px',color:C.medium,padding:'0 4px',lineHeight:1}}>&#8249;</button>
           <span style={{fontWeight:'600',fontSize:'14px',color:C.dark,minWidth:'120px',textAlign:'center'}}>{MONTHS_ES[viewMonth]} {viewYear}</span>
@@ -167,13 +188,14 @@ function HabitCalendar({ collection, project, refreshKey }) {
           {Array.from({length:daysInMonth}).map((_,i)=>{
             const n=i+1; const status=getStatus(n);
             const ds=`${viewYear}-${String(viewMonth+1).padStart(2,'0')}-${String(n).padStart(2,'0')}`;
+            const isToday = ds===todayStr;
             return (
               <div key={n} title={statusLabel[status]} style={{
                 aspectRatio:'1',display:'flex',alignItems:'center',justifyContent:'center',borderRadius:'50%',
                 background:status==='future'?'transparent':statusColor[status],
-                border:ds===todayStr?`2px solid ${C.medium}`:'2px solid transparent',
-                color:status==='future'?'#9CA3AF':(status==='today'?C.dark:'white'),
-                fontSize:'12px',fontWeight:ds===todayStr?'700':'500',cursor:'default',
+                border:isToday?`3px solid ${C.dark}`:'2px solid transparent',
+                color:status==='future'?'#9CA3AF':'white',
+                fontSize:'12px',fontWeight:isToday?'900':'500',cursor:'default',
               }}>{n}</div>
             );
           })}
@@ -224,7 +246,7 @@ function VisitasTab() {
   const [saving,setSaving]         = useState(false);
   const [saved,setSaved]           = useState(false);
   const [refreshKey,setRefreshKey] = useState(0);
-  const [calProj,setCalProj]       = useState('Todos');
+  const [calProj,setCalProj]       = useState(PROJECTS[0]);
 
   const save = async () => {
     setSaving(true);
@@ -282,7 +304,7 @@ function VisitasTab() {
             {PROJECTS.map(p=><option key={p}>{p}</option>)}
           </select>
         </div>
-        <HabitCalendar collection="visitas" project={calProj} refreshKey={refreshKey}/>
+        <HabitCalendar project={calProj} refreshKey={refreshKey}/>
       </div>
     </div>
   );
@@ -296,7 +318,7 @@ function LeadsTab() {
   const [saving,setSaving]   = useState(false);
   const [saved,setSaved]     = useState(false);
   const [refreshKey,setRefreshKey] = useState(0);
-  const [calProj,setCalProj] = useState('Todos');
+  const [calProj,setCalProj] = useState(PROJECTS[0]);
 
   const save = async () => {
     setSaving(true);
@@ -354,7 +376,7 @@ function LeadsTab() {
             {PROJECTS.map(p=><option key={p}>{p}</option>)}
           </select>
         </div>
-        <HabitCalendar collection="leads" project={calProj} refreshKey={refreshKey}/>
+        <HabitCalendar project={calProj} refreshKey={refreshKey}/>
       </div>
     </div>
   );
@@ -513,7 +535,7 @@ function DashboardTab({ onGoToMetas }) {
 
       {loading ? <Spinner/> : <>
         <div style={{display:'flex',flexWrap:'wrap',gap:'12px',marginBottom:'20px'}}>
-          <KpiCard label="Total Leads"     value={totLeads}       color={C.light}/>
+          <KpiCard label="Total Prospectos" value={totLeads}       color={C.light}/>
           <KpiCard label="Visitas prospectos" value={totProspectos}  color={C.medium}/>
           <KpiCard label="Visitas compradores" value={totCompradores} color={C.dark}/>
           <KpiCard label="Ventas Cerradas" value={totVentas}      color="#D97706"/>
@@ -521,9 +543,9 @@ function DashboardTab({ onGoToMetas }) {
 
         <div style={{background:'white',borderRadius:'12px',padding:'24px',boxShadow:'0 1px 6px rgba(0,0,0,0.08)',marginBottom:'20px'}}>
           <div style={{fontWeight:'700',color:C.dark,marginBottom:'20px',fontSize:'15px'}}>Funnel de Conversion</div>
-          <FunnelBar label="Leads" value={totLeads} max={maxFunnel} color={C.light}/>
+          <FunnelBar label="Prospectos" value={totLeads} max={maxFunnel} color={C.light}/>
           <FunnelBar label="Visitas de prospectos" value={totProspectos} max={maxFunnel} color={C.medium}
-            pctLabel={`${pct(totProspectos,totLeads)}% de leads llegaron a visita`}/>
+            pctLabel={`${pct(totProspectos,totLeads)}% de prospectos llegaron a visita`}/>
           <FunnelBar label="Ventas Cerradas" value={totVentas} max={maxFunnel} color="#D97706"
             pctLabel={`${pct(totVentas,totProspectos)}% de prospectos cerraron venta`}/>
         </div>
@@ -532,9 +554,9 @@ function DashboardTab({ onGoToMetas }) {
           <div style={{fontWeight:'700',color:C.dark,marginBottom:'16px',fontSize:'15px'}}>Tasas de Conversion</div>
           <div style={{display:'flex',flexWrap:'wrap',gap:'12px'}}>
             {[
-              {label:'Leads → Visitas',  val:pct(totProspectos,totLeads),  sub:`${totProspectos} de ${totLeads}`},
-              {label:'Visitas → Ventas', val:pct(totVentas,totProspectos), sub:`${totVentas} de ${totProspectos}`},
-              {label:'Leads → Ventas',   val:pct(totVentas,totLeads),      sub:`${totVentas} de ${totLeads}`},
+              {label:'Prospectos → Visitas',  val:pct(totProspectos,totLeads),  sub:`${totProspectos} de ${totLeads}`},
+              {label:'Visitas → Ventas',      val:pct(totVentas,totProspectos), sub:`${totVentas} de ${totProspectos}`},
+              {label:'Prospectos → Ventas',   val:pct(totVentas,totLeads),      sub:`${totVentas} de ${totLeads}`},
             ].map(({label,val,sub})=>(
               <div key={label} style={{flex:'1',minWidth:'150px',background:C.sageLight,borderRadius:'12px',padding:'16px 20px',textAlign:'center'}}>
                 <div style={{fontSize:'11px',color:'#6B7280',fontWeight:'600',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:'8px'}}>{label}</div>
@@ -568,7 +590,7 @@ function DashboardTab({ onGoToMetas }) {
           )}
           <div style={{display:'flex',flexWrap:'wrap',gap:'12px'}}>
             {[
-              {label:'Leads necesarios',  val:meta>0&&totVentas>0?Math.ceil(meta*totLeads/totVentas):'—'},
+              {label:'Prospectos necesarios',  val:meta>0&&totVentas>0?Math.ceil(meta*totLeads/totVentas):'—'},
               {label:'Visitas necesarias', val:meta>0&&totVentas>0?Math.ceil(meta*totProspectos/totVentas):'—'},
               {label:'Avance actual',      val:meta>0?`${totVentas} / ${meta}`:'—'},
               {label:'Faltan',             val:meta>0?Math.max(0,meta-totVentas):'—'},
@@ -587,7 +609,7 @@ function DashboardTab({ onGoToMetas }) {
             <div style={{overflowX:'auto'}}>
               <table style={{width:'100%',borderCollapse:'collapse',fontSize:'13px'}}>
                 <thead><tr style={{background:C.sageLight}}>
-                  {['Proyecto','Leads','Prospectos','Compradores','Ventas','L→V','V→C'].map(h=>(
+                  {['Proyecto','Prospectos','Visitas','Compradores','Ventas','P→V','V→C'].map(h=>(
                     <th key={h} style={{padding:'10px 12px',textAlign:'left',fontWeight:'700',color:C.dark}}>{h}</th>
                   ))}
                 </tr></thead>
