@@ -250,10 +250,11 @@ function VisitasTab() {
   const [loadingRec,setLoadingRec]   = useState(true);
 
   const loadRecords = useCallback(async () => {
-    try { const data=await DB.query('visitas','2020-01-01',today(),'Todos'); setRecords(data.slice(0,40)); }
+    setLoadingRec(true);
+    try { const data=await DB.query('visitas','2020-01-01',today(),project); setRecords(data.slice(0,40)); }
     catch(e) { console.error(e); }
     setLoadingRec(false);
-  },[]);
+  },[project]);
   useEffect(()=>{ loadRecords(); },[loadRecords]);
 
   const save = async () => {
@@ -351,10 +352,11 @@ function LeadsTab() {
   const [loadingRec,setLoadingRec] = useState(true);
 
   const loadRecords = useCallback(async () => {
-    try { const data=await DB.query('leads','2020-01-01',today(),'Todos'); setRecords(data.slice(0,40)); }
+    setLoadingRec(true);
+    try { const data=await DB.query('leads','2020-01-01',today(),project); setRecords(data.slice(0,40)); }
     catch(e) { console.error(e); }
     setLoadingRec(false);
-  },[]);
+  },[project]);
   useEffect(()=>{ loadRecords(); },[loadRecords]);
 
   const save = async () => {
@@ -451,10 +453,11 @@ function VentasTab() {
   const [loading,setLoading] = useState(true);
 
   const loadRecords = useCallback(async () => {
-    try { const data=await DB.query('ventas','2020-01-01',today(),'Todos'); setRecords(data.slice(0,20)); }
+    setLoading(true);
+    try { const data=await DB.query('ventas','2020-01-01',today(),project); setRecords(data.slice(0,20)); }
     catch(e) { console.error(e); }
     setLoading(false);
-  },[]);
+  },[project]);
   useEffect(()=>{ loadRecords(); },[loadRecords]);
 
   const save = async () => {
