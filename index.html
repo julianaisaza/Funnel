@@ -239,23 +239,35 @@ function FunnelBar({label,value,max,color,pctLabel}) {
 }
 
 function VisitasTab() {
-  const [project,setProject]       = useState(PROJECTS[0]);
-  const [date,setDate]             = useState(today());
+  const [project,setProject]         = useState(PROJECTS[0]);
+  const [date,setDate]               = useState(today());
   const [compradores,setCompradores] = useState(0);
   const [prospectos,setProspectos]   = useState(0);
-  const [saving,setSaving]         = useState(false);
-  const [saved,setSaved]           = useState(false);
-  const [refreshKey,setRefreshKey] = useState(0);
-  const [calProj,setCalProj]       = useState(PROJECTS[0]);
+  const [saving,setSaving]           = useState(false);
+  const [saved,setSaved]             = useState(false);
+  const [refreshKey,setRefreshKey]   = useState(0);
+  const [records,setRecords]         = useState([]);
+  const [loadingRec,setLoadingRec]   = useState(true);
+
+  const loadRecords = useCallback(async () => {
+    try { const data=await DB.query('visitas','2020-01-01',today(),'Todos'); setRecords(data.slice(0,40)); }
+    catch(e) { console.error(e); }
+    setLoadingRec(false);
+  },[]);
+  useEffect(()=>{ loadRecords(); },[loadRecords]);
 
   const save = async () => {
     setSaving(true);
     try {
       await DB.add('visitas',{project,date,compradores:Number(compradores),prospectos:Number(prospectos)});
-      setSaved(true); setCompradores(0); setProspectos(0); setRefreshKey(k=>k+1);
+      setSaved(true); setCompradores(0); setProspectos(0); setRefreshKey(k=>k+1); await loadRecords();
       setTimeout(()=>setSaved(false),2500);
     } catch(e) { alert('Error al guardar: '+e.message); }
     setSaving(false);
+  };
+  const del = async (id) => {
+    try { await DB.del('visitas',id); setRefreshKey(k=>k+1); await loadRecords(); }
+    catch(e) { alert(e.message); }
   };
 
   const inp = {width:'100%',padding:'10px 12px',borderRadius:'8px',border:`1.5px solid ${C.sage}`,fontSize:'14px',color:C.dark};
@@ -295,39 +307,68 @@ function VisitasTab() {
           {saved?'¡Guardado!':saving?'Guardando...':'Guardar Visitas del Dia'}
         </button>
       </div>
-      <div style={{marginBottom:'8px'}}>
-        <div style={{display:'flex',alignItems:'center',gap:'12px',marginTop:'8px'}}>
-          <span style={{fontSize:'13px',fontWeight:'600',color:C.dark}}>Ver hábito de:</span>
-          <select value={calProj} onChange={e=>setCalProj(e.target.value)}
-            style={{padding:'6px 10px',borderRadius:'8px',border:`1.5px solid ${C.sage}`,background:'white',fontSize:'13px',color:C.dark}}>
-            <option value="Todos">Todos los proyectos</option>
-            {PROJECTS.map(p=><option key={p}>{p}</option>)}
-          </select>
+      <HabitCalendar project={project} refreshKey={refreshKey}/>
+      {loadingRec ? <Spinner/> : records.length>0 && (
+        <div style={{background:'white',borderRadius:'12px',padding:'20px',boxShadow:'0 1px 6px rgba(0,0,0,0.08)',marginTop:'20px'}}>
+          <div style={{fontWeight:'700',color:C.dark,marginBottom:'12px',fontSize:'14px'}}>Registros recientes</div>
+          <div style={{overflowX:'auto'}}>
+            <table style={{width:'100%',borderCollapse:'collapse',fontSize:'13px'}}>
+              <thead><tr style={{background:C.sageLight}}>
+                {['Proyecto','Fecha','Compradores','Prospectos',''].map(h=>(
+                  <th key={h} style={{padding:'8px 10px',textAlign:'left',fontWeight:'600',color:C.dark}}>{h}</th>
+                ))}
+              </tr></thead>
+              <tbody>
+                {records.map(r=>(
+                  <tr key={r.id} style={{borderBottom:`1px solid ${C.sageLight}`}}>
+                    <td style={{padding:'8px 10px',color:C.dark,fontWeight:'600'}}>{r.project}</td>
+                    <td style={{padding:'8px 10px',color:'#6B7280'}}>{fmt(r.date)}</td>
+                    <td style={{padding:'8px 10px',fontWeight:'700',color:C.medium,textAlign:'center'}}>{r.compradores}</td>
+                    <td style={{padding:'8px 10px',fontWeight:'700',color:C.dark,textAlign:'center'}}>{r.prospectos}</td>
+                    <td style={{padding:'8px 10px'}}>
+                      <button onClick={()=>del(r.id)} style={{background:'none',border:'none',cursor:'pointer',color:'#EF4444',fontSize:'12px'}}>Eliminar</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-        <HabitCalendar project={calProj} refreshKey={refreshKey}/>
-      </div>
+      )}
     </div>
   );
 }
 
 function LeadsTab() {
-  const [project,setProject] = useState(PROJECTS[0]);
-  const [date,setDate]       = useState(today());
-  const [keybe,setKeybe]     = useState(0);
-  const [sico,setSico]       = useState(0);
-  const [saving,setSaving]   = useState(false);
-  const [saved,setSaved]     = useState(false);
+  const [project,setProject]       = useState(PROJECTS[0]);
+  const [date,setDate]             = useState(today());
+  const [keybe,setKeybe]           = useState(0);
+  const [sico,setSico]             = useState(0);
+  const [saving,setSaving]         = useState(false);
+  const [saved,setSaved]           = useState(false);
   const [refreshKey,setRefreshKey] = useState(0);
-  const [calProj,setCalProj] = useState(PROJECTS[0]);
+  const [records,setRecords]       = useState([]);
+  const [loadingRec,setLoadingRec] = useState(true);
+
+  const loadRecords = useCallback(async () => {
+    try { const data=await DB.query('leads','2020-01-01',today(),'Todos'); setRecords(data.slice(0,40)); }
+    catch(e) { console.error(e); }
+    setLoadingRec(false);
+  },[]);
+  useEffect(()=>{ loadRecords(); },[loadRecords]);
 
   const save = async () => {
     setSaving(true);
     try {
       await DB.add('leads',{project,date,keybe:Number(keybe),sico:Number(sico)});
-      setSaved(true); setKeybe(0); setSico(0); setRefreshKey(k=>k+1);
+      setSaved(true); setKeybe(0); setSico(0); setRefreshKey(k=>k+1); await loadRecords();
       setTimeout(()=>setSaved(false),2500);
     } catch(e) { alert('Error al guardar: '+e.message); }
     setSaving(false);
+  };
+  const del = async (id) => {
+    try { await DB.del('leads',id); setRefreshKey(k=>k+1); await loadRecords(); }
+    catch(e) { alert(e.message); }
   };
 
   const inp = {width:'100%',padding:'10px 12px',borderRadius:'8px',border:`1.5px solid ${C.sage}`,fontSize:'14px',color:C.dark};
@@ -367,17 +408,35 @@ function LeadsTab() {
           {saved?'¡Guardado!':saving?'Guardando...':'Guardar Prospectos del Dia'}
         </button>
       </div>
-      <div style={{marginBottom:'8px'}}>
-        <div style={{display:'flex',alignItems:'center',gap:'12px',marginTop:'8px'}}>
-          <span style={{fontSize:'13px',fontWeight:'600',color:C.dark}}>Ver hábito de:</span>
-          <select value={calProj} onChange={e=>setCalProj(e.target.value)}
-            style={{padding:'6px 10px',borderRadius:'8px',border:`1.5px solid ${C.sage}`,background:'white',fontSize:'13px',color:C.dark}}>
-            <option value="Todos">Todos los proyectos</option>
-            {PROJECTS.map(p=><option key={p}>{p}</option>)}
-          </select>
+      <HabitCalendar project={project} refreshKey={refreshKey}/>
+      {loadingRec ? <Spinner/> : records.length>0 && (
+        <div style={{background:'white',borderRadius:'12px',padding:'20px',boxShadow:'0 1px 6px rgba(0,0,0,0.08)',marginTop:'20px'}}>
+          <div style={{fontWeight:'700',color:C.dark,marginBottom:'12px',fontSize:'14px'}}>Registros recientes</div>
+          <div style={{overflowX:'auto'}}>
+            <table style={{width:'100%',borderCollapse:'collapse',fontSize:'13px'}}>
+              <thead><tr style={{background:C.sageLight}}>
+                {['Proyecto','Fecha','Prosp. Keybe','Prosp. Sico','Total',''].map(h=>(
+                  <th key={h} style={{padding:'8px 10px',textAlign:'left',fontWeight:'600',color:C.dark}}>{h}</th>
+                ))}
+              </tr></thead>
+              <tbody>
+                {records.map(r=>(
+                  <tr key={r.id} style={{borderBottom:`1px solid ${C.sageLight}`}}>
+                    <td style={{padding:'8px 10px',color:C.dark,fontWeight:'600'}}>{r.project}</td>
+                    <td style={{padding:'8px 10px',color:'#6B7280'}}>{fmt(r.date)}</td>
+                    <td style={{padding:'8px 10px',fontWeight:'700',color:C.medium,textAlign:'center'}}>{r.keybe}</td>
+                    <td style={{padding:'8px 10px',fontWeight:'700',color:C.medium,textAlign:'center'}}>{r.sico}</td>
+                    <td style={{padding:'8px 10px',fontWeight:'700',color:C.dark,textAlign:'center'}}>{(r.keybe||0)+(r.sico||0)}</td>
+                    <td style={{padding:'8px 10px'}}>
+                      <button onClick={()=>del(r.id)} style={{background:'none',border:'none',cursor:'pointer',color:'#EF4444',fontSize:'12px'}}>Eliminar</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-        <HabitCalendar project={calProj} refreshKey={refreshKey}/>
-      </div>
+      )}
     </div>
   );
 }
