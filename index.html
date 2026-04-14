@@ -3,944 +3,731 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tierra Grata &amp; Co. — Funnel de Ventas</title>
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <title>Plan Mercadeo 2026 · Tierra Grata</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <style>
-    body { margin: 0; font-family: 'Segoe UI', sans-serif; background: #F0EBE0; }
-    * { box-sizing: border-box; }
-    input[type=number]::-webkit-inner-spin-button,
-    input[type=number]::-webkit-outer-spin-button { opacity: 1; }
+    :root {
+      --tg-blue:        #1C3A52;
+      --tg-green:       #006B6B;
+      --tg-light-green: #C8D5C8;
+      --tg-beige:       #F0EBE2;
+      --tg-card:        #FFFFFF;
+      --tg-beige-mid:   #E8E2D8;
+      --tg-text:        #1A2E3B;
+      --tg-mid:         #4A6070;
+      --tg-soft:        #8A9EAD;
+      --tg-border:      #DDD8CF;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--tg-beige); color: var(--tg-text); font-family: 'Inter', system-ui, sans-serif; min-height: 100vh; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--tg-beige); }
+    ::-webkit-scrollbar-thumb { background: var(--tg-light-green); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--tg-green); }
     @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner { animation: spin 0.8s linear infinite; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+    .fade-in { animation: fadeIn 0.3s ease; }
+    .progress-bar { transition: width 0.9s cubic-bezier(0.4,0,0.2,1); }
+    .card { background: var(--tg-card); border: 1px solid var(--tg-border); border-radius: 16px; box-shadow: 0 1px 4px rgba(28,58,82,0.07); }
+    .task-row:hover td { background: #F7F4EE !important; }
+    .task-row:hover .delete-btn { opacity: 1 !important; }
+    .delete-btn { opacity: 0; transition: opacity 0.15s; background: none; border: none; cursor: pointer; color: #C0392B; font-size: 15px; padding: 2px 5px; border-radius: 5px; line-height: 1; }
+    .delete-btn:hover { background: rgba(192,57,43,0.1); }
+    input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.4; cursor: pointer; }
+    select option { background: #fff; color: var(--tg-text); }
+    .nav-tab { padding: 6px 16px; border-radius: 10px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.15s; border: none; background: transparent; }
+    .nav-tab.active { background: var(--tg-blue); color: white; }
+    .nav-tab:not(.active) { color: var(--tg-mid); }
+    .nav-tab:not(.active):hover { color: var(--tg-blue); }
+    .status-pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; border: none; cursor: pointer; white-space: nowrap; appearance: none; -webkit-appearance: none; }
+    .status-sin { background: rgba(138,158,173,0.15); color: #5A7080; }
+    .status-en  { background: rgba(217,119,6,0.12);  color: #B45309; }
+    .status-ok  { background: rgba(0,107,107,0.14);  color: #006B6B; }
+    .input-inline { background: transparent; border: none; color: var(--tg-text); font-size: 13px; font-family: inherit; width: 100%; outline: none; padding: 3px 6px; border-radius: 6px; }
+    .input-inline:focus { background: var(--tg-beige); }
+    .input-inline::placeholder { color: var(--tg-soft); }
+    .project-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; cursor: pointer; transition: background 0.15s; }
+    .project-header:hover { background: rgba(200,213,200,0.2); }
+    .btn-primary { background: var(--tg-blue); color: white; border: none; padding: 10px 22px; border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer; transition: opacity 0.15s; }
+    .btn-primary:hover { opacity: 0.85; }
+    .btn-green { background: var(--tg-green); color: white; border: none; padding: 8px 18px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; transition: opacity 0.15s; }
+    .btn-green:hover { opacity: 0.85; }
+    .stat-card { background: var(--tg-card); border: 1px solid var(--tg-border); border-radius: 14px; padding: 18px 20px; display: flex; align-items: center; gap: 14px; box-shadow: 0 1px 4px rgba(28,58,82,0.06); }
+    .resp-select { background: transparent; border: none; color: var(--tg-text); font-size: 13px; font-family: inherit; width: 100%; outline: none; padding: 3px 6px; border-radius: 6px; cursor: pointer; appearance: none; -webkit-appearance: none; }
+    .resp-select:focus { background: var(--tg-beige); }
+    .team-overlay { position: fixed; inset: 0; background: rgba(28,58,82,0.5); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 20px; }
+    .team-modal { background: #fff; border-radius: 20px; padding: 32px; max-width: 420px; width: 100%; box-shadow: 0 20px 60px rgba(28,58,82,0.2); }
+    .tag-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--tg-beige); border: 1px solid var(--tg-border); border-radius: 20px; padding: 4px 12px; font-size: 13px; font-weight: 500; color: var(--tg-text); }
+    .tag-chip button { background: none; border: none; cursor: pointer; color: var(--tg-soft); font-size: 16px; line-height: 1; padding: 0; display: flex; }
+    .tag-chip button:hover { color: #c0392b; }
+    .add-row-cell { padding: 10px 16px; border-top: 1px dashed var(--tg-border); }
   </style>
 </head>
 <body>
-<div id="root"></div>
-<script type="text/babel">
-const { useState, useEffect, useCallback } = React;
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useCallback, useMemo, useRef } = React;
 
-const _sb = window.supabase.createClient(
-  'https://kxfpvevlbiavjeejklgm.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt4ZnB2ZXZsYmlhdmplZWprbGdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NTYwNzAsImV4cCI6MjA5MDEzMjA3MH0.y6lO_LJr_TB7AjQN5Hgo71XSQ-o6lbdyasxG0fSGSXc'
+    const C = {
+      blue:'#1C3A52', green:'#006B6B', lg:'#C8D5C8',
+      beige:'#F0EBE2', mid:'#4A6070', soft:'#8A9EAD', border:'#DDD8CF', text:'#1A2E3B'
+    };
+
+    const INITIAL_PROJECTS = [
+      { name:'MARCA', icon:'🎨', order_index:1, tasks:['Ejecutar ADN de marca','Sesiones de fotos (modelos y obra)','Pauta de seguidores'] },
+      { name:'CLIENTES AL EXTERIOR', icon:'🌎', order_index:2, tasks:['Documentos descargables para captación de bases de datos','Evento de capacitaciones virtuales','Feria internacional','Detalles clientes etapa inicial y cierre de negocio','Experiencia de atención'] },
+      { name:'REFERIDOS', icon:'🤝', order_index:3, tasks:['Campaña trimestral referidos Q1 (Ene–Mar)','Campaña trimestral referidos Q2 (Abr–Jun)','Campaña trimestral referidos Q3 (Jul–Sep)','Campaña trimestral referidos Q4 (Oct–Dic)'] },
+      { name:'SEO - CONTENIDO', icon:'🔍', order_index:4, tasks:['Auditoría y consultoría SEO','Definición de públicos para contenido','Construcción de 2 artículos mensuales','Rediseño de landing page del blog','Boletín mensual para difusión','Software para rastrear posicionamiento'] },
+      { name:'DIGITALIZACIÓN', icon:'💻', order_index:5, tasks:['Atención digital con IA','Dinámica de evaluación (Kahoot)','Construir indicadores de conversión'] },
+      { name:'EXPERIENCIA SALAS', icon:'🏠', order_index:6, tasks:['Mantener experiencia de bebidas (sodas, cafés)','Definir aroma y garantizar en salas y apartamentos','Renovar detalle para el cierre del negocio','Mascota (inflable, muñeco, dibujos...)'] },
+      { name:'ENDOMARKETING', icon:'👥', order_index:7, tasks:['Estructurar con Gestión Humana propuesta de valor','Estrategia de Social Selling','Estrategia LinkedIn'] },
+      { name:'FRICCIÓN CERO', icon:'⚡', order_index:8, tasks:['Entendimiento de todos los puntos de contacto'] },
+      { name:'EXCELENCIA EN ATENCIÓN', icon:'⭐', order_index:9, tasks:['Mystery Shopper Bimestral','Plan de capacitaciones en atención','Horas de Oro','Llamatlon – Dinámico','Indicadores en los diferentes momentos de atención'] },
+      { name:'FERIAS INMOBILIARIAS', icon:'🏢', order_index:10, tasks:['Asistencia a ferias'] },
+      { name:'ADMINISTRATIVO', icon:'📋', order_index:11, tasks:['Grabación avances de obra','Gestión de gastos vs presupuesto'] },
+      { name:'FECHAS ESPECIALES', icon:'🎉', order_index:12, tasks:['Día del vendedor','Navidad'] },
+      { name:'RELACIÓN CON PROVEEDORES', icon:'🔗', order_index:13, tasks:['Publicidad exterior','Copys','Pauta'] },
+      { name:'LANZAMIENTOS DE ETAPAS', icon:'🚀', order_index:14, tasks:['Ambarte: etapa 3','Bosketo: torre 2','Country: 2B','Mágica: 4B','Summit 1B'] },
+      { name:'ENTREGAS', icon:'🔑', order_index:15, tasks:['Camino Verde: torre 3','Camino Verde: torre 4','Country: entregas 1A','Country: entregas 1B','Mágica 3A'] },
+    ];
+
+    const DEFAULT_TEAM = ['Juliana','Valentina','Andrés','María','Carlos'];
+
+    /* ── CREDENCIALES SUPABASE (hardcoded para todos los usuarios) ──
+       Pega aquí tu Project URL y tu Anon/Publishable Key una sola vez.
+       Mientras estén completas, nadie verá el modal de configuración.     */
+    const SUPABASE_URL = 'https://kxfpvevlbiavjeejklgm.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt4ZnB2ZXZsYmlhdmplZWprbGdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NTYwNzAsImV4cCI6MjA5MDEzMjA3MH0.y6lO_LJr_TB7AjQN5Hgo71XSQ-o6lbdyasxG0fSGSXc';
+
+    let sbClient = null;
+    function getClient() {
+      if (sbClient) return sbClient;
+      // Prioridad 1: credenciales hardcoded en el código
+      if (SUPABASE_URL && SUPABASE_KEY) {
+        sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        return sbClient;
+      }
+      // Prioridad 2: credenciales guardadas en localStorage (fallback)
+      const url=localStorage.getItem('sb_url'), key=localStorage.getItem('sb_key');
+      if (url && key) sbClient=supabase.createClient(url,key);
+      return sbClient;
+    }
+    function pctColor(p){ if(p===100)return C.green; if(p>=60)return '#2E8B57'; if(p>=30)return '#D97706'; return '#C0392B'; }
+
+    /* ── TEAM MODAL ── */
+    function TeamModal({ onClose, team, addMember, removeMember }) {
+      const [input,setInput]=useState('');
+      const [saving,setSaving]=useState(false);
+      async function add(){
+        const n=input.trim();
+        if(!n||team.some(m=>m.name===n))return;
+        setSaving(true);
+        await addMember(n);
+        setInput(''); setSaving(false);
+      }
+      return (
+        <div className="team-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+          <div className="team-modal fade-in">
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:20}}>
+              <h2 style={{fontSize:18,fontWeight:800,color:C.blue}}>Gestionar Equipo</h2>
+              <button onClick={onClose} style={{background:'none',border:'none',fontSize:22,cursor:'pointer',color:C.soft}}>✕</button>
+            </div>
+            <p style={{fontSize:13,color:C.mid,marginBottom:18,lineHeight:1.6}}>Agrega o elimina responsables. Los cambios se sincronizan para todos.</p>
+            <div style={{display:'flex',gap:8,marginBottom:20}}>
+              <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&add()}
+                placeholder="Nombre del responsable…"
+                style={{flex:1,background:'#F7F4EE',border:`1px solid ${C.border}`,borderRadius:8,padding:'9px 14px',fontSize:13,color:C.text,outline:'none',fontFamily:'inherit'}}/>
+              <button className="btn-green" onClick={add} disabled={saving}>{saving?'…':'Agregar'}</button>
+            </div>
+            <div style={{display:'flex',flexWrap:'wrap',gap:8,minHeight:36}}>
+              {team.length===0
+                ? <p style={{color:C.soft,fontSize:13}}>No hay responsables aún.</p>
+                : team.map(m=>(
+                  <span key={m.id} className="tag-chip">
+                    {m.name}
+                    <button onClick={()=>removeMember(m.id)} title="Eliminar">×</button>
+                  </span>
+                ))}
+            </div>
+            <button className="btn-primary" onClick={onClose} style={{marginTop:24,width:'100%'}}>Listo</button>
+          </div>
+        </div>
+      );
+    }
+
+    /* ── SETUP MODAL ── */
+    function SetupModal({ onSave }) {
+      const [url,setUrl]=useState(localStorage.getItem('sb_url')||'');
+      const [key,setKey]=useState(localStorage.getItem('sb_key')||'');
+      const [err,setErr]=useState('');
+      const [loading,setLoading]=useState(false);
+      async function handle(){
+        if(!url.trim()||!key.trim())return setErr('Completa ambos campos.');
+        setLoading(true);setErr('');
+        try{
+          const client=supabase.createClient(url.trim(),key.trim());
+          const{error}=await client.from('projects').select('id').limit(1);
+          if(error&&!['PGRST116','42P01'].includes(error.code))throw error;
+          localStorage.setItem('sb_url',url.trim());localStorage.setItem('sb_key',key.trim());
+          sbClient=client; onSave();
+        }catch(e){setErr('No se pudo conectar. Verifica las credenciales.');}
+        finally{setLoading(false);}
+      }
+      const sqlSchema=`create table if not exists public.projects (
+  id bigserial primary key,
+  name text not null,
+  icon text not null default '📋',
+  order_index integer not null default 0,
+  created_at timestamptz not null default now()
 );
+create table if not exists public.tasks (
+  id bigserial primary key,
+  project_id bigint not null references public.projects(id) on delete cascade,
+  name text not null,
+  status text not null default 'Sin iniciar'
+    check (status in ('Sin iniciar','En proceso','Completado')),
+  responsible text,
+  scheduled_date date,
+  observations text,
+  order_index integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+alter table public.projects enable row level security;
+alter table public.tasks enable row level security;
+create policy "Allow all on projects" on public.projects for all using (true) with check (true);
+create policy "Allow all on tasks" on public.tasks for all using (true) with check (true);
 
-const DB = {
-  add: async (table, item) => {
-    const { data, error } = await _sb.from(table).insert([item]).select();
-    if (error) throw error;
-    return data?.[0];
-  },
-  query: async (table, from, to, proj) => {
-    let q = _sb.from(table).select('*').gte('date', from).lte('date', to);
-    if (proj && proj !== 'Todos') q = q.eq('project', proj);
-    const { data, error } = await q.order('date', { ascending: false });
-    if (error) throw error;
-    return data || [];
-  },
-  del: async (table, id) => {
-    const { error } = await _sb.from(table).delete().eq('id', id);
-    if (error) throw error;
-  },
-  getMeta: async (key) => {
-    const { data } = await _sb.from('metas').select('valor').eq('meta_key', key).maybeSingle();
-    return data?.valor ?? 0;
-  },
-  saveMeta: async (key, val) => {
-    const { error } = await _sb.from('metas').upsert(
-      { meta_key: key, valor: val, updated_at: new Date().toISOString() },
-      { onConflict: 'meta_key' }
-    );
-    if (error) throw error;
-  },
-  getMetasBatch: async (keys) => {
-    const { data } = await _sb.from('metas').select('meta_key,valor').in('meta_key', keys);
-    const result = {};
-    (data || []).forEach(r => { result[r.meta_key] = r.valor; });
-    return result;
-  },
-};
-
-const C = {
-  dark:'#1A4D5C', medium:'#007272', light:'#009494',
-  sage:'#C8D5C8', cream:'#F0EBE0', sageLight:'#EAF0EA',
-};
-const PROJECTS = ['Bosketo','Zitizen','Camino Verde','Mágica','Country Life','Summit','Summit Grand','Ambarte'];
-const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-const today     = () => new Date().toISOString().slice(0,10);
-const fmt       = (d) => { const s=(d||'').slice(0,10); const [y,m,day]=s.split('-'); return `${day}/${m}/${y}`; };
-const weekStart = () => { const d=new Date(); d.setDate(d.getDate()-d.getDay()); return d.toISOString().slice(0,10); };
-const pct       = (n,d) => d>0 ? Math.round(n/d*100) : 0;
-
-function TGLogo() {
-  return (
-    <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
-      <div style={{width:'40px',height:'40px',borderRadius:'8px',background:'rgba(255,255,255,0.18)',
-        display:'flex',alignItems:'center',justifyContent:'center',fontWeight:'900',fontSize:'15px',
-        color:'white',fontFamily:'Georgia,serif',letterSpacing:'1px',
-        border:'1px solid rgba(255,255,255,0.25)',flexShrink:0}}>TG</div>
-      <div>
-        <div style={{fontWeight:'900',fontSize:'15px',color:'white',fontFamily:'Georgia,serif',lineHeight:'1.1'}}>Tierra Grata</div>
-        <div style={{fontWeight:'600',fontSize:'9px',color:'rgba(200,213,200,0.85)',letterSpacing:'2.5px'}}>&amp; Co.</div>
-      </div>
-    </div>
-  );
-}
-
-function Spinner() {
-  return (
-    <div style={{display:'flex',justifyContent:'center',padding:'32px'}}>
-      <div style={{width:'28px',height:'28px',borderRadius:'50%',
-        border:`3px solid ${C.sage}`,borderTopColor:C.medium,animation:'spin 0.7s linear infinite'}} />
-    </div>
-  );
-}
-
-function HabitCalendar({ project, refreshKey }) {
-  const now = new Date();
-  const [viewYear,setViewYear]     = useState(now.getFullYear());
-  const [viewMonth,setViewMonth]   = useState(now.getMonth());
-  const [visitasRec,setVisitasRec] = useState([]);
-  const [leadsRec,setLeadsRec]     = useState([]);
-  const [loading,setLoading]       = useState(false);
-  const todayStr    = today();
-  const daysInMonth = new Date(viewYear,viewMonth+1,0).getDate();
-  const firstDow    = new Date(viewYear,viewMonth,1).getDay();
-
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      setLoading(true);
-      const f = `${viewYear}-${String(viewMonth+1).padStart(2,'0')}-01`;
-      const t = `${viewYear}-${String(viewMonth+1).padStart(2,'0')}-${String(daysInMonth).padStart(2,'0')}`;
-      try {
-        const [vData, lData] = await Promise.all([
-          DB.query('visitas', f, t, 'Todos'),
-          DB.query('leads',   f, t, 'Todos'),
-        ]);
-        if (!cancelled) { setVisitasRec(vData); setLeadsRec(lData); }
-      } catch(e) { console.error(e); }
-      if (!cancelled) setLoading(false);
-    };
-    load(); return () => { cancelled=true; };
-  }, [project, refreshKey, viewYear, viewMonth, daysInMonth]);
-
-  const checkProjects = project==='Todos' ? PROJECTS : [project];
-
-  // Índice: qué proyectos registraron visitas / leads por fecha
-  const visitasByDate = {};
-  visitasRec.forEach(r => {
-    const d=(r.date||'').slice(0,10);
-    if (!visitasByDate[d]) visitasByDate[d]=new Set();
-    visitasByDate[d].add(r.project);
-  });
-  const leadsByDate = {};
-  leadsRec.forEach(r => {
-    const d=(r.date||'').slice(0,10);
-    if (!leadsByDate[d]) leadsByDate[d]=new Set();
-    leadsByDate[d].add(r.project);
-  });
-
-  // Completo = proyecto tiene registro en AMBAS tablas ese día
-  const getStatus = (n) => {
-    const ds=`${viewYear}-${String(viewMonth+1).padStart(2,'0')}-${String(n).padStart(2,'0')}`;
-    if (ds > todayStr) return 'future';
-    const vSet = visitasByDate[ds] || new Set();
-    const lSet = leadsByDate[ds]   || new Set();
-    const withBoth = checkProjects.filter(p => vSet.has(p) && lSet.has(p)).length;
-    const withAny  = checkProjects.filter(p => vSet.has(p) || lSet.has(p)).length;
-    if (withBoth === checkProjects.length) return 'done';
-    if (withAny  > 0)                      return 'partial';
-    return 'missed';
-  };
-
-  const statusColor = {done:'#007272', partial:'#D97706', missed:'#DC2626', future:'#D1D5DB'};
-  const statusLabel = {done:'Completo (visitas + prospectos)', partial:'Parcial (falta un registro)', missed:'Sin registro', future:'Pendiente'};
-  const counts = {done:0, partial:0, missed:0};
-  for (let d=1; d<=daysInMonth; d++) { const s=getStatus(d); if (s in counts) counts[s]++; }
-  const isCurrent = viewYear===now.getFullYear() && viewMonth===now.getMonth();
-  const prevM = () => { if (viewMonth===0){setViewYear(y=>y-1);setViewMonth(11);}else setViewMonth(m=>m-1); };
-  const nextM = () => { if (isCurrent) return; if (viewMonth===11){setViewYear(y=>y+1);setViewMonth(0);}else setViewMonth(m=>m+1); };
-
-  return (
-    <div style={{background:'white',borderRadius:'12px',padding:'20px',marginTop:'24px',boxShadow:'0 1px 6px rgba(0,0,0,0.08)'}}>
-      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'16px'}}>
-        <div>
-          <div style={{fontWeight:'700',fontSize:'15px',color:C.dark}}>Registro del Mes</div>
-          <div style={{fontSize:'11px',color:'#9CA3AF',marginTop:'2px'}}>✓ Completo = visitas + prospectos registrados</div>
-        </div>
-        <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
-          <button onClick={prevM} style={{background:'none',border:'none',cursor:'pointer',fontSize:'18px',color:C.medium,padding:'0 4px',lineHeight:1}}>&#8249;</button>
-          <span style={{fontWeight:'600',fontSize:'14px',color:C.dark,minWidth:'120px',textAlign:'center'}}>{MONTHS_ES[viewMonth]} {viewYear}</span>
-          <button onClick={nextM} style={{background:'none',border:'none',cursor:isCurrent?'not-allowed':'pointer',fontSize:'18px',color:isCurrent?'#D1D5DB':C.medium,padding:'0 4px',lineHeight:1}}>&#8250;</button>
-        </div>
-      </div>
-      {loading ? <Spinner /> : <>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'4px',marginBottom:'6px'}}>
-          {['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'].map(d=>(
-            <div key={d} style={{textAlign:'center',fontSize:'11px',fontWeight:'600',color:'#9CA3AF',padding:'2px 0'}}>{d}</div>
-          ))}
-        </div>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'4px'}}>
-          {Array.from({length:firstDow}).map((_,i)=><div key={'e'+i}/>)}
-          {Array.from({length:daysInMonth}).map((_,i)=>{
-            const n=i+1; const status=getStatus(n);
-            const ds=`${viewYear}-${String(viewMonth+1).padStart(2,'0')}-${String(n).padStart(2,'0')}`;
-            const isToday = ds===todayStr;
-            return (
-              <div key={n} title={statusLabel[status]} style={{
-                aspectRatio:'1',display:'flex',alignItems:'center',justifyContent:'center',borderRadius:'50%',
-                background:status==='future'?'transparent':statusColor[status],
-                border:isToday?`3px solid ${C.dark}`:'2px solid transparent',
-                color:status==='future'?'#9CA3AF':'white',
-                fontSize:'12px',fontWeight:isToday?'900':'500',cursor:'default',
-              }}>{n}</div>
-            );
-          })}
-        </div>
-        <div style={{display:'flex',gap:'16px',marginTop:'16px',flexWrap:'wrap'}}>
-          {[{key:'done',label:`Completo (${counts.done})`},{key:'partial',label:`Parcial (${counts.partial})`},{key:'missed',label:`Sin registro (${counts.missed})`}].map(({key,label})=>(
-            <div key={key} style={{display:'flex',alignItems:'center',gap:'6px'}}>
-              <div style={{width:'12px',height:'12px',borderRadius:'50%',background:statusColor[key]}}/>
-              <span style={{fontSize:'12px',color:'#6B7280'}}>{label}</span>
+create table if not exists public.team_members (
+  id bigserial primary key,
+  name text not null unique,
+  created_at timestamptz not null default now()
+);
+alter table public.team_members enable row level security;
+create policy "Allow all on team_members" on public.team_members for all using (true) with check (true);`;
+      return (
+        <div style={{position:'fixed',inset:0,background:'rgba(28,58,82,0.65)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:100,padding:20}}>
+          <div className="card fade-in" style={{maxWidth:520,width:'100%',padding:36,maxHeight:'90vh',overflowY:'auto'}}>
+            <div style={{fontSize:44,textAlign:'center',marginBottom:12}}>🔌</div>
+            <h2 style={{fontSize:22,fontWeight:800,color:C.blue,textAlign:'center',marginBottom:6}}>Conectar Supabase</h2>
+            <p style={{color:C.mid,fontSize:13,textAlign:'center',lineHeight:1.6,marginBottom:28}}>
+              Para guardar los datos en línea necesitas un proyecto Supabase.<br/>
+              <a href="https://supabase.com" target="_blank" style={{color:C.green}}>supabase.com</a> → Project → Settings → API
+            </p>
+            <div style={{display:'flex',flexDirection:'column',gap:14}}>
+              {[['Project URL','https://xxxx.supabase.co',url,setUrl],['Anon / Publishable Key','eyJhbGciOi...',key,setKey]].map(([label,ph,val,set])=>(
+                <div key={label}>
+                  <label style={{fontSize:11,fontWeight:600,color:C.mid,textTransform:'uppercase',letterSpacing:'0.5px',display:'block',marginBottom:6}}>{label}</label>
+                  <input value={val} onChange={e=>set(e.target.value)} placeholder={ph}
+                    style={{width:'100%',background:'#F7F4EE',border:`1px solid ${C.border}`,borderRadius:10,padding:'10px 14px',color:C.text,fontSize:14,outline:'none',fontFamily:'inherit'}}/>
+                </div>
+              ))}
+              {err&&<p style={{color:'#C0392B',fontSize:13}}>{err}</p>}
+              <button className="btn-primary" onClick={handle} disabled={loading} style={{marginTop:4,opacity:loading?0.6:1}}>
+                {loading?'Conectando...':'Conectar y empezar →'}
+              </button>
+              <details style={{marginTop:4}}>
+                <summary style={{color:C.soft,fontSize:12,cursor:'pointer'}}>¿Cómo crear el schema en Supabase?</summary>
+                <div style={{color:C.mid,fontSize:12,marginTop:8,lineHeight:1.7,background:'#F7F4EE',borderRadius:8,padding:12}}>
+                  1. Entra a tu proyecto en supabase.com<br/>
+                  2. Ve a <strong style={{color:C.blue}}>SQL Editor</strong> en el menú lateral<br/>
+                  3. Pega y ejecuta este SQL:
+                  <pre style={{marginTop:8,background:'#EEE8DF',padding:10,borderRadius:6,fontSize:10,overflowX:'auto',lineHeight:1.5,whiteSpace:'pre-wrap'}}>{sqlSchema}</pre>
+                </div>
+              </details>
             </div>
-          ))}
-        </div>
-      </>}
-    </div>
-  );
-}
-
-function KpiCard({label,value,color}) {
-  return (
-    <div style={{background:'white',borderRadius:'12px',padding:'18px',boxShadow:'0 1px 6px rgba(0,0,0,0.08)',flex:'1',minWidth:'140px'}}>
-      <div style={{fontSize:'12px',color:'#6B7280',fontWeight:'600',marginBottom:'6px',textTransform:'uppercase',letterSpacing:'0.5px'}}>{label}</div>
-      <div style={{fontSize:'32px',fontWeight:'800',color:color||C.dark}}>{value}</div>
-    </div>
-  );
-}
-
-function FunnelBar({label,value,max,color,pctLabel}) {
-  const w=max>0?Math.round(value/max*100):0;
-  return (
-    <div style={{marginBottom:'16px'}}>
-      <div style={{display:'flex',justifyContent:'space-between',marginBottom:'4px'}}>
-        <span style={{fontSize:'14px',fontWeight:'600',color:C.dark}}>{label}</span>
-        <span style={{fontSize:'14px',fontWeight:'700',color}}>{value}</span>
-      </div>
-      <div style={{background:'#E5E7EB',borderRadius:'99px',height:'10px'}}>
-        <div style={{background:color,borderRadius:'99px',height:'10px',width:w+'%',transition:'width 0.5s'}}/>
-      </div>
-      {pctLabel && <div style={{fontSize:'11px',color:'#9CA3AF',marginTop:'2px'}}>{pctLabel}</div>}
-    </div>
-  );
-}
-
-function VisitasTab() {
-  const [project,setProject]         = useState(PROJECTS[0]);
-  const [date,setDate]               = useState(today());
-  const [compradores,setCompradores] = useState(0);
-  const [prospectos,setProspectos]   = useState(0);
-  const [saving,setSaving]           = useState(false);
-  const [saved,setSaved]             = useState(false);
-  const [refreshKey,setRefreshKey]   = useState(0);
-  const [records,setRecords]         = useState([]);
-  const [loadingRec,setLoadingRec]   = useState(true);
-
-  const loadRecords = useCallback(async () => {
-    setLoadingRec(true);
-    try { const data=await DB.query('visitas','2020-01-01',today(),project); setRecords(data.slice(0,40)); }
-    catch(e) { console.error(e); }
-    setLoadingRec(false);
-  },[project]);
-  useEffect(()=>{ loadRecords(); },[loadRecords]);
-
-  const save = async () => {
-    setSaving(true);
-    try {
-      await DB.add('visitas',{project,date,compradores:Number(compradores),prospectos:Number(prospectos)});
-      setSaved(true); setCompradores(0); setProspectos(0); setRefreshKey(k=>k+1); await loadRecords();
-      setTimeout(()=>setSaved(false),2500);
-    } catch(e) { alert('Error al guardar: '+e.message); }
-    setSaving(false);
-  };
-  const del = async (id) => {
-    try { await DB.del('visitas',id); setRefreshKey(k=>k+1); await loadRecords(); }
-    catch(e) { alert(e.message); }
-  };
-
-  const inp = {width:'100%',padding:'10px 12px',borderRadius:'8px',border:`1.5px solid ${C.sage}`,fontSize:'14px',color:C.dark};
-  return (
-    <div>
-      <div style={{background:'white',borderRadius:'12px',padding:'24px',boxShadow:'0 1px 6px rgba(0,0,0,0.08)',marginBottom:'8px'}}>
-        <div style={{fontSize:'13px',color:C.medium,fontWeight:'700',marginBottom:'18px',padding:'8px 12px',background:C.sageLight,borderRadius:'8px',borderLeft:`4px solid ${C.medium}`}}>
-          Registro diario obligatorio — aunque el numero sea 0.
-        </div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'16px',marginBottom:'16px'}}>
-          <div>
-            <label style={{fontSize:'13px',fontWeight:'600',color:C.dark,display:'block',marginBottom:'6px'}}>Proyecto</label>
-            <select value={project} onChange={e=>setProject(e.target.value)} style={{...inp,background:'white'}}>
-              {PROJECTS.map(p=><option key={p}>{p}</option>)}
-            </select>
-          </div>
-          <div>
-            <label style={{fontSize:'13px',fontWeight:'600',color:C.dark,display:'block',marginBottom:'6px'}}>Fecha</label>
-            <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={inp}/>
           </div>
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'16px',marginBottom:'20px'}}>
-          <div>
-            <label style={{fontSize:'13px',fontWeight:'600',color:C.dark,display:'block',marginBottom:'6px'}}>Compradores</label>
-            <input type="number" min="0" value={compradores} onChange={e=>setCompradores(e.target.value)}
-              style={{...inp,fontSize:'20px',fontWeight:'700',textAlign:'center'}}/>
-          </div>
-          <div>
-            <label style={{fontSize:'13px',fontWeight:'600',color:C.dark,display:'block',marginBottom:'6px'}}>Prospectos (Visita única)</label>
-            <input type="number" min="0" value={prospectos} onChange={e=>setProspectos(e.target.value)}
-              style={{...inp,fontSize:'20px',fontWeight:'700',textAlign:'center'}}/>
-          </div>
-        </div>
-        <button onClick={save} disabled={saving} style={{width:'100%',padding:'14px',
-          background:saved?C.medium:saving?'#6B9FAC':C.dark,color:'white',border:'none',
-          borderRadius:'10px',fontSize:'15px',fontWeight:'700',cursor:saving?'not-allowed':'pointer',transition:'background 0.2s'}}>
-          {saved?'¡Guardado!':saving?'Guardando...':'Guardar Visitas del Dia'}
-        </button>
-      </div>
-      <HabitCalendar project={project} refreshKey={refreshKey}/>
-      {loadingRec ? <Spinner/> : records.length>0 && (
-        <div style={{background:'white',borderRadius:'12px',padding:'20px',boxShadow:'0 1px 6px rgba(0,0,0,0.08)',marginTop:'20px'}}>
-          <div style={{fontWeight:'700',color:C.dark,marginBottom:'12px',fontSize:'14px'}}>Registros recientes</div>
-          <div style={{overflowX:'auto'}}>
-            <table style={{width:'100%',borderCollapse:'collapse',fontSize:'13px'}}>
-              <thead><tr style={{background:C.sageLight}}>
-                {['Proyecto','Fecha','Compradores','Prospectos',''].map(h=>(
-                  <th key={h} style={{padding:'8px 10px',textAlign:'left',fontWeight:'600',color:C.dark}}>{h}</th>
-                ))}
-              </tr></thead>
-              <tbody>
-                {records.map(r=>(
-                  <tr key={r.id} style={{borderBottom:`1px solid ${C.sageLight}`}}>
-                    <td style={{padding:'8px 10px',color:C.dark,fontWeight:'600'}}>{r.project}</td>
-                    <td style={{padding:'8px 10px',color:'#6B7280'}}>{fmt(r.date)}</td>
-                    <td style={{padding:'8px 10px',fontWeight:'700',color:C.medium,textAlign:'center'}}>{r.compradores}</td>
-                    <td style={{padding:'8px 10px',fontWeight:'700',color:C.dark,textAlign:'center'}}>{r.prospectos}</td>
-                    <td style={{padding:'8px 10px'}}>
-                      <button onClick={()=>del(r.id)} style={{background:'none',border:'none',cursor:'pointer',color:'#EF4444',fontSize:'12px'}}>Eliminar</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      );
+    }
+
+    /* ── CIRCULAR PROGRESS ── */
+    function CircularProgress({ pct }) {
+      const r=30,circ=2*Math.PI*r,color=pctColor(pct);
+      return (
+        <div style={{position:'relative',width:80,height:80,flexShrink:0}}>
+          <svg width="80" height="80" style={{transform:'rotate(-90deg)'}}>
+            <circle cx="40" cy="40" r={r} fill="none" stroke={C.lg} strokeWidth="7"/>
+            <circle cx="40" cy="40" r={r} fill="none" stroke={color} strokeWidth="7"
+              strokeLinecap="round" strokeDasharray={circ}
+              strokeDashoffset={circ-(pct/100)*circ}
+              style={{transition:'stroke-dashoffset 1s cubic-bezier(0.4,0,0.2,1)'}}/>
+          </svg>
+          <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
+            <span style={{fontSize:15,fontWeight:900,color,lineHeight:1}}>{pct}%</span>
           </div>
         </div>
-      )}
-    </div>
-  );
-}
+      );
+    }
 
-function LeadsTab() {
-  const [project,setProject]       = useState(PROJECTS[0]);
-  const [date,setDate]             = useState(today());
-  const [keybe,setKeybe]           = useState(0);
-  const [sico,setSico]             = useState(0);
-  const [saving,setSaving]         = useState(false);
-  const [saved,setSaved]           = useState(false);
-  const [refreshKey,setRefreshKey] = useState(0);
-  const [records,setRecords]       = useState([]);
-  const [loadingRec,setLoadingRec] = useState(true);
-
-  const loadRecords = useCallback(async () => {
-    setLoadingRec(true);
-    try { const data=await DB.query('leads','2020-01-01',today(),project); setRecords(data.slice(0,40)); }
-    catch(e) { console.error(e); }
-    setLoadingRec(false);
-  },[project]);
-  useEffect(()=>{ loadRecords(); },[loadRecords]);
-
-  const save = async () => {
-    setSaving(true);
-    try {
-      await DB.add('leads',{project,date,keybe:Number(keybe),sico:Number(sico)});
-      setSaved(true); setKeybe(0); setSico(0); setRefreshKey(k=>k+1); await loadRecords();
-      setTimeout(()=>setSaved(false),2500);
-    } catch(e) { alert('Error al guardar: '+e.message); }
-    setSaving(false);
-  };
-  const del = async (id) => {
-    try { await DB.del('leads',id); setRefreshKey(k=>k+1); await loadRecords(); }
-    catch(e) { alert(e.message); }
-  };
-
-  const inp = {width:'100%',padding:'10px 12px',borderRadius:'8px',border:`1.5px solid ${C.sage}`,fontSize:'14px',color:C.dark};
-  return (
-    <div>
-      <div style={{background:'white',borderRadius:'12px',padding:'24px',boxShadow:'0 1px 6px rgba(0,0,0,0.08)',marginBottom:'8px'}}>
-        <div style={{fontSize:'13px',color:C.medium,fontWeight:'700',marginBottom:'18px',padding:'8px 12px',background:C.sageLight,borderRadius:'8px',borderLeft:`4px solid ${C.medium}`}}>
-          Registro diario obligatorio — aunque el numero sea 0.
-        </div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'16px',marginBottom:'16px'}}>
-          <div>
-            <label style={{fontSize:'13px',fontWeight:'600',color:C.dark,display:'block',marginBottom:'6px'}}>Proyecto</label>
-            <select value={project} onChange={e=>setProject(e.target.value)} style={{...inp,background:'white'}}>
-              {PROJECTS.map(p=><option key={p}>{p}</option>)}
-            </select>
-          </div>
-          <div>
-            <label style={{fontSize:'13px',fontWeight:'600',color:C.dark,display:'block',marginBottom:'6px'}}>Fecha</label>
-            <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={inp}/>
-          </div>
-        </div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'16px',marginBottom:'20px'}}>
-          <div>
-            <label style={{fontSize:'13px',fontWeight:'600',color:C.dark,display:'block',marginBottom:'6px'}}>Prospectos Keybe</label>
-            <input type="number" min="0" value={keybe} onChange={e=>setKeybe(e.target.value)}
-              style={{...inp,fontSize:'20px',fontWeight:'700',textAlign:'center'}}/>
-          </div>
-          <div>
-            <label style={{fontSize:'13px',fontWeight:'600',color:C.dark,display:'block',marginBottom:'6px'}}>Prospectos Sico</label>
-            <input type="number" min="0" value={sico} onChange={e=>setSico(e.target.value)}
-              style={{...inp,fontSize:'20px',fontWeight:'700',textAlign:'center'}}/>
-          </div>
-        </div>
-        <button onClick={save} disabled={saving} style={{width:'100%',padding:'14px',
-          background:saved?C.medium:saving?'#6B9FAC':C.dark,color:'white',border:'none',
-          borderRadius:'10px',fontSize:'15px',fontWeight:'700',cursor:saving?'not-allowed':'pointer',transition:'background 0.2s'}}>
-          {saved?'¡Guardado!':saving?'Guardando...':'Guardar Prospectos del Dia'}
-        </button>
-      </div>
-      <HabitCalendar project={project} refreshKey={refreshKey}/>
-      {loadingRec ? <Spinner/> : records.length>0 && (
-        <div style={{background:'white',borderRadius:'12px',padding:'20px',boxShadow:'0 1px 6px rgba(0,0,0,0.08)',marginTop:'20px'}}>
-          <div style={{fontWeight:'700',color:C.dark,marginBottom:'12px',fontSize:'14px'}}>Registros recientes</div>
-          <div style={{overflowX:'auto'}}>
-            <table style={{width:'100%',borderCollapse:'collapse',fontSize:'13px'}}>
-              <thead><tr style={{background:C.sageLight}}>
-                {['Proyecto','Fecha','Prosp. Keybe','Prosp. Sico','Total',''].map(h=>(
-                  <th key={h} style={{padding:'8px 10px',textAlign:'left',fontWeight:'600',color:C.dark}}>{h}</th>
-                ))}
-              </tr></thead>
-              <tbody>
-                {records.map(r=>(
-                  <tr key={r.id} style={{borderBottom:`1px solid ${C.sageLight}`}}>
-                    <td style={{padding:'8px 10px',color:C.dark,fontWeight:'600'}}>{r.project}</td>
-                    <td style={{padding:'8px 10px',color:'#6B7280'}}>{fmt(r.date)}</td>
-                    <td style={{padding:'8px 10px',fontWeight:'700',color:C.medium,textAlign:'center'}}>{r.keybe}</td>
-                    <td style={{padding:'8px 10px',fontWeight:'700',color:C.medium,textAlign:'center'}}>{r.sico}</td>
-                    <td style={{padding:'8px 10px',fontWeight:'700',color:C.dark,textAlign:'center'}}>{(r.keybe||0)+(r.sico||0)}</td>
-                    <td style={{padding:'8px 10px'}}>
-                      <button onClick={()=>del(r.id)} style={{background:'none',border:'none',cursor:'pointer',color:'#EF4444',fontSize:'12px'}}>Eliminar</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function VentasTab() {
-  const [project,setProject] = useState(PROJECTS[0]);
-  const [date,setDate]       = useState(weekStart());
-  const [ventas,setVentas]   = useState(0);
-  const [saving,setSaving]   = useState(false);
-  const [saved,setSaved]     = useState(false);
-  const [records,setRecords] = useState([]);
-  const [loading,setLoading] = useState(true);
-
-  const loadRecords = useCallback(async () => {
-    setLoading(true);
-    try { const data=await DB.query('ventas','2020-01-01',today(),project); setRecords(data.slice(0,20)); }
-    catch(e) { console.error(e); }
-    setLoading(false);
-  },[project]);
-  useEffect(()=>{ loadRecords(); },[loadRecords]);
-
-  const save = async () => {
-    setSaving(true);
-    try {
-      await DB.add('ventas',{project,date,ventas:Number(ventas)});
-      setSaved(true); setVentas(0); await loadRecords();
-      setTimeout(()=>setSaved(false),2500);
-    } catch(e) { alert('Error: '+e.message); }
-    setSaving(false);
-  };
-  const del = async (id) => { try { await DB.del('ventas',id); await loadRecords(); } catch(e) { alert(e.message); } };
-
-  const inp = {width:'100%',padding:'10px 12px',borderRadius:'8px',border:`1.5px solid ${C.sage}`,fontSize:'14px',color:C.dark};
-  return (
-    <div>
-      <div style={{background:'white',borderRadius:'12px',padding:'24px',boxShadow:'0 1px 6px rgba(0,0,0,0.08)',marginBottom:'20px'}}>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'16px',marginBottom:'16px'}}>
-          <div>
-            <label style={{fontSize:'13px',fontWeight:'600',color:C.dark,display:'block',marginBottom:'6px'}}>Proyecto</label>
-            <select value={project} onChange={e=>setProject(e.target.value)} style={{...inp,background:'white'}}>
-              {PROJECTS.map(p=><option key={p}>{p}</option>)}
-            </select>
-          </div>
-          <div>
-            <label style={{fontSize:'13px',fontWeight:'600',color:C.dark,display:'block',marginBottom:'6px'}}>Semana (fecha de corte)</label>
-            <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={inp}/>
-          </div>
-        </div>
-        <div style={{marginBottom:'20px'}}>
-          <label style={{fontSize:'13px',fontWeight:'600',color:C.dark,display:'block',marginBottom:'6px'}}>Numero de ventas cerradas</label>
-          <input type="number" min="0" value={ventas} onChange={e=>setVentas(e.target.value)}
-            style={{...inp,fontSize:'28px',fontWeight:'700',textAlign:'center',padding:'12px'}}/>
-        </div>
-        <button onClick={save} disabled={saving} style={{width:'100%',padding:'14px',
-          background:saved?C.medium:saving?'#6B9FAC':C.dark,color:'white',border:'none',
-          borderRadius:'10px',fontSize:'15px',fontWeight:'700',cursor:saving?'not-allowed':'pointer'}}>
-          {saved?'¡Guardado!':saving?'Guardando...':'Guardar Cierre Semanal'}
-        </button>
-      </div>
-      {loading ? <Spinner/> : records.length>0 && (
-        <div style={{background:'white',borderRadius:'12px',padding:'20px',boxShadow:'0 1px 6px rgba(0,0,0,0.08)'}}>
-          <div style={{fontWeight:'700',color:C.dark,marginBottom:'12px',fontSize:'14px'}}>Registros recientes</div>
-          <table style={{width:'100%',borderCollapse:'collapse',fontSize:'13px'}}>
-            <thead><tr style={{background:C.sageLight}}>
-              {['Proyecto','Fecha','Ventas',''].map(h=>(
-                <th key={h} style={{padding:'8px 10px',textAlign:'left',fontWeight:'600',color:C.dark}}>{h}</th>
-              ))}
-            </tr></thead>
-            <tbody>
-              {records.map(r=>(
-                <tr key={r.id} style={{borderBottom:`1px solid ${C.sageLight}`}}>
-                  <td style={{padding:'8px 10px',color:C.dark}}>{r.project}</td>
-                  <td style={{padding:'8px 10px',color:'#6B7280'}}>{fmt(r.date)}</td>
-                  <td style={{padding:'8px 10px',fontWeight:'700',color:C.medium}}>{r.ventas}</td>
-                  <td style={{padding:'8px 10px'}}>
-                    <button onClick={()=>del(r.id)} style={{background:'none',border:'none',cursor:'pointer',color:'#EF4444',fontSize:'12px'}}>Eliminar</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function DashboardTab({ onGoToMetas }) {
-  const [proj,setProj]     = useState('Todos');
-  const [from,setFrom]     = useState(()=>{ const d=new Date(); d.setDate(1); return d.toISOString().slice(0,10); });
-  const [to,setTo]         = useState(today());
-  const [meta,setMeta]     = useState(0);
-  const [loading,setLoading] = useState(false);
-  const [visitas,setVisitas] = useState([]);
-  const [leads,setLeads]   = useState([]);
-  const [ventas,setVentas] = useState([]);
-  const metaKey = `${from.slice(0,7)}-${proj}`;
-
-  useEffect(()=>{
-    let cancelled=false;
-    const load=async()=>{
-      setLoading(true);
-      try {
-        const [v,l,s]=await Promise.all([
-          DB.query('visitas',from,to,proj),
-          DB.query('leads',from,to,proj),
-          DB.query('ventas',from,to,proj),
-        ]);
-        if (!cancelled){ setVisitas(v); setLeads(l); setVentas(s); }
-      } catch(e){ console.error(e); }
-      if (!cancelled) setLoading(false);
-    };
-    load(); return ()=>{ cancelled=true; };
-  },[from,to,proj]);
-
-  useEffect(()=>{ DB.getMeta(metaKey).then(v=>setMeta(v)).catch(()=>{}); },[metaKey]);
-
-  const totLeads       = leads.reduce((s,r)=>s+(r.keybe||0)+(r.sico||0),0);
-  const totProspectos  = visitas.reduce((s,r)=>s+(r.prospectos||0),0);
-  const totCompradores = visitas.reduce((s,r)=>s+(r.compradores||0),0);
-  const totVentas      = ventas.reduce((s,r)=>s+(r.ventas||0),0);
-  const maxFunnel      = Math.max(totLeads,totProspectos,totVentas,1);
-
-  const byProject = PROJECTS.map(p=>{
-    const vR=visitas.filter(r=>r.project===p), lR=leads.filter(r=>r.project===p), sR=ventas.filter(r=>r.project===p);
-    return {p,
-      l:  lR.reduce((s,r)=>s+(r.keybe||0)+(r.sico||0),0),
-      pr: vR.reduce((s,r)=>s+(r.prospectos||0),0),
-      c:  vR.reduce((s,r)=>s+(r.compradores||0),0),
-      s:  sR.reduce((s,r)=>s+(r.ventas||0),0),
-    };
-  }).filter(x=>x.l>0||x.pr>0||x.c>0||x.s>0);
-
-  const sel = {padding:'8px 12px',borderRadius:'8px',border:`1.5px solid ${C.sage}`,fontSize:'14px',color:C.dark,background:'white'};
-  return (
-    <div>
-      <div style={{background:'white',borderRadius:'12px',padding:'16px',boxShadow:'0 1px 6px rgba(0,0,0,0.08)',marginBottom:'20px'}}>
-        <div style={{display:'flex',flexWrap:'wrap',gap:'12px',alignItems:'flex-end'}}>
-          <div>
-            <label style={{fontSize:'12px',fontWeight:'600',color:'#6B7280',display:'block',marginBottom:'4px'}}>PROYECTO</label>
-            <select value={proj} onChange={e=>setProj(e.target.value)} style={sel}>
-              <option value="Todos">Todos</option>
-              {PROJECTS.map(p=><option key={p}>{p}</option>)}
-            </select>
-          </div>
-          <div>
-            <label style={{fontSize:'12px',fontWeight:'600',color:'#6B7280',display:'block',marginBottom:'4px'}}>DESDE</label>
-            <input type="date" value={from} onChange={e=>setFrom(e.target.value)} style={sel}/>
-          </div>
-          <div>
-            <label style={{fontSize:'12px',fontWeight:'600',color:'#6B7280',display:'block',marginBottom:'4px'}}>HASTA</label>
-            <input type="date" value={to} onChange={e=>setTo(e.target.value)} style={sel}/>
-          </div>
-        </div>
-      </div>
-
-      {loading ? <Spinner/> : <>
-        <div style={{display:'flex',flexWrap:'wrap',gap:'12px',marginBottom:'20px'}}>
-          <KpiCard label="Total Prospectos" value={totLeads}       color={C.light}/>
-          <KpiCard label="Visitas prospectos" value={totProspectos}  color={C.medium}/>
-          <KpiCard label="Visitas compradores" value={totCompradores} color={C.dark}/>
-          <KpiCard label="Ventas Cerradas" value={totVentas}      color="#D97706"/>
-        </div>
-
-        <div style={{background:'white',borderRadius:'12px',padding:'24px',boxShadow:'0 1px 6px rgba(0,0,0,0.08)',marginBottom:'20px'}}>
-          <div style={{fontWeight:'700',color:C.dark,marginBottom:'20px',fontSize:'15px'}}>Funnel de Conversion</div>
-          <FunnelBar label="Prospectos" value={totLeads} max={maxFunnel} color={C.light}/>
-          <FunnelBar label="Visitas de prospectos" value={totProspectos} max={maxFunnel} color={C.medium}
-            pctLabel={`${pct(totProspectos,totLeads)}% de prospectos llegaron a visita`}/>
-          <FunnelBar label="Ventas Cerradas" value={totVentas} max={maxFunnel} color="#D97706"
-            pctLabel={`${pct(totVentas,totProspectos)}% de prospectos cerraron venta`}/>
-        </div>
-
-        <div style={{background:'white',borderRadius:'12px',padding:'24px',boxShadow:'0 1px 6px rgba(0,0,0,0.08)',marginBottom:'20px'}}>
-          <div style={{fontWeight:'700',color:C.dark,marginBottom:'16px',fontSize:'15px'}}>Tasas de Conversion</div>
-          <div style={{display:'flex',flexWrap:'wrap',gap:'12px'}}>
-            {[
-              {label:'Prospectos → Visitas',  val:pct(totProspectos,totLeads),  sub:`${totProspectos} de ${totLeads}`},
-              {label:'Visitas → Ventas',      val:pct(totVentas,totProspectos), sub:`${totVentas} de ${totProspectos}`},
-              {label:'Prospectos → Ventas',   val:pct(totVentas,totLeads),      sub:`${totVentas} de ${totLeads}`},
-            ].map(({label,val,sub})=>(
-              <div key={label} style={{flex:'1',minWidth:'150px',background:C.sageLight,borderRadius:'12px',padding:'16px 20px',textAlign:'center'}}>
-                <div style={{fontSize:'11px',color:'#6B7280',fontWeight:'600',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:'8px'}}>{label}</div>
-                <div style={{fontSize:'36px',fontWeight:'900',color:C.dark,lineHeight:'1'}}>{val}%</div>
-                <div style={{fontSize:'12px',color:'#9CA3AF',marginTop:'6px'}}>{sub}</div>
+    /* ── PROJECT CARD ── */
+    function ProjectCard({ project, tasks, progress, onClick }) {
+      const done=tasks.filter(t=>t.status==='Completado').length;
+      const inProg=tasks.filter(t=>t.status==='En proceso').length;
+      const pend=tasks.filter(t=>t.status==='Sin iniciar').length;
+      const color=pctColor(progress);
+      return (
+        <div onClick={onClick} className="card fade-in"
+          style={{padding:20,cursor:'pointer',transition:'all 0.2s',display:'flex',flexDirection:'column',gap:14}}>
+          <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:10}}>
+            <div style={{display:'flex',alignItems:'center',gap:10,minWidth:0}}>
+              <div style={{width:42,height:42,borderRadius:12,background:C.beige,display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,flexShrink:0}}>{project.icon}</div>
+              <div style={{minWidth:0}}>
+                <div style={{fontWeight:700,fontSize:13,color:C.blue,lineHeight:1.3}}>{project.name}</div>
+                <div style={{fontSize:11,color:C.soft,marginTop:3}}>{tasks.length} actividades</div>
               </div>
-            ))}
-          </div>
-        </div>
-
-        <div style={{background:'white',borderRadius:'12px',padding:'24px',boxShadow:'0 1px 6px rgba(0,0,0,0.08)',marginBottom:'20px'}}>
-          <div style={{fontWeight:'700',color:C.dark,marginBottom:'16px',fontSize:'15px'}}>Calculadora de Meta</div>
-          <div style={{display:'flex',alignItems:'center',gap:'12px',flexWrap:'wrap',marginBottom:'12px'}}>
-            <label style={{fontSize:'14px',fontWeight:'600',color:C.dark}}>Meta de ventas:</label>
-            <div style={{padding:'8px 20px',borderRadius:'8px',background:C.sageLight,border:`1.5px solid ${C.sage}`,
-              fontSize:'22px',fontWeight:'800',color:meta>0?C.dark:'#9CA3AF',minWidth:'70px',textAlign:'center'}}>
-              {meta > 0 ? meta : '—'}
             </div>
-            <div style={{fontSize:'12px',color:'#9CA3AF',display:'flex',alignItems:'center',gap:'6px',flexWrap:'wrap'}}>
-              <span>{from.slice(0,7)} · {proj}</span>
-              <span style={{color:C.medium,cursor:'pointer',fontWeight:'600',textDecoration:'underline'}}
-                onClick={onGoToMetas}>
-                ✎ Editar en Metas de Venta
+            <CircularProgress pct={progress}/>
+          </div>
+          <div style={{height:6,background:C.lg,borderRadius:99,overflow:'hidden'}}>
+            <div className="progress-bar" style={{height:'100%',width:`${progress}%`,background:`linear-gradient(90deg,${C.blue},${C.green})`,borderRadius:99}}/>
+          </div>
+          <div style={{display:'flex',justifyContent:'space-between',borderTop:`1px solid ${C.border}`,paddingTop:12}}>
+            {[{v:done,l:'listas',c:C.green},{v:inProg,l:'en proceso',c:'#D97706'},{v:pend,l:'pendientes',c:C.soft}].map(({v,l,c})=>(
+              <span key={l} style={{fontSize:11,display:'flex',alignItems:'center',gap:5,color:c}}>
+                <span style={{width:7,height:7,borderRadius:'50%',background:c,display:'inline-block'}}/>
+                <strong>{v}</strong> <span style={{color:C.soft}}>{l}</span>
               </span>
-            </div>
-          </div>
-          {meta === 0 && (
-            <div style={{fontSize:'12px',color:'#D97706',padding:'8px 12px',background:'#FEF3C7',borderRadius:'8px',marginBottom:'12px',borderLeft:'3px solid #D97706'}}>
-              No hay meta configurada para este periodo. Ve a la pestaña <strong>Metas de Venta</strong> para establecerla.
-            </div>
-          )}
-          <div style={{display:'flex',flexWrap:'wrap',gap:'12px'}}>
-            {[
-              {label:'Prospectos necesarios',  val:meta>0&&totVentas>0?Math.ceil(meta*totLeads/totVentas):'—'},
-              {label:'Visitas necesarias', val:meta>0&&totVentas>0?Math.ceil(meta*totProspectos/totVentas):'—'},
-              {label:'Avance actual',      val:meta>0?`${totVentas} / ${meta}`:'—'},
-              {label:'Faltan',             val:meta>0?Math.max(0,meta-totVentas):'—'},
-            ].map(({label,val})=>(
-              <div key={label} style={{background:C.sageLight,borderRadius:'10px',padding:'14px 18px',flex:'1',minWidth:'120px'}}>
-                <div style={{fontSize:'11px',color:'#6B7280',fontWeight:'600',textTransform:'uppercase',marginBottom:'4px'}}>{label}</div>
-                <div style={{fontSize:'22px',fontWeight:'800',color:C.dark}}>{val}</div>
-              </div>
             ))}
           </div>
         </div>
+      );
+    }
 
-        {byProject.length>0 ? (
-          <div style={{background:'white',borderRadius:'12px',padding:'24px',boxShadow:'0 1px 6px rgba(0,0,0,0.08)'}}>
-            <div style={{fontWeight:'700',color:C.dark,marginBottom:'16px',fontSize:'15px'}}>Comparativo por Proyecto</div>
-            <div style={{overflowX:'auto'}}>
-              <table style={{width:'100%',borderCollapse:'collapse',fontSize:'13px'}}>
-                <thead><tr style={{background:C.sageLight}}>
-                  {['Proyecto','Prospectos','Visitas','Compradores','Ventas','P→V','V→C'].map(h=>(
-                    <th key={h} style={{padding:'10px 12px',textAlign:'left',fontWeight:'700',color:C.dark}}>{h}</th>
-                  ))}
-                </tr></thead>
+    /* ── DASHBOARD ── */
+    function Dashboard({ projects, tasks, getProgress, getProjTasks, setView }) {
+      const total=tasks.length,done=tasks.filter(t=>t.status==='Completado').length;
+      const inProg=tasks.filter(t=>t.status==='En proceso').length,pend=total-done-inProg;
+      const global=total?Math.round((done/total)*100):0;
+      return (
+        <div className="fade-in" style={{padding:'28px 0',display:'flex',flexDirection:'column',gap:28}}>
+          <div>
+            <h1 style={{fontSize:26,fontWeight:900,color:C.blue}}>Dashboard</h1>
+            <p style={{color:C.mid,fontSize:14,marginTop:4}}>Seguimiento en tiempo real · Plan de Mercadeo 2026</p>
+          </div>
+          <div className="card" style={{padding:28,position:'relative',overflow:'hidden'}}>
+            <div style={{position:'absolute',inset:0,background:`linear-gradient(135deg,rgba(28,58,82,0.05),transparent,rgba(0,107,107,0.04))`,pointerEvents:'none'}}/>
+            <div style={{position:'relative',display:'flex',flexWrap:'wrap',gap:24,alignItems:'center'}}>
+              <div style={{flex:1,minWidth:220}}>
+                <div style={{display:'flex',alignItems:'flex-end',gap:10,marginBottom:14}}>
+                  <span style={{fontSize:56,fontWeight:900,color:C.blue,lineHeight:1}}>{global}%</span>
+                  <span style={{color:C.mid,fontSize:14,marginBottom:8}}>progreso global</span>
+                </div>
+                <div style={{height:12,background:C.lg,borderRadius:99,overflow:'hidden'}}>
+                  <div className="progress-bar" style={{height:'100%',width:`${global}%`,background:`linear-gradient(90deg,${C.blue},${C.green})`,borderRadius:99}}/>
+                </div>
+              </div>
+              <div style={{display:'flex',gap:28,flexShrink:0}}>
+                {[{v:done,l:'Completadas',c:C.green},{v:inProg,l:'En proceso',c:'#D97706'},{v:pend,l:'Pendientes',c:C.soft}].map(({v,l,c})=>(
+                  <div key={l} style={{textAlign:'center'}}>
+                    <div style={{fontSize:32,fontWeight:900,color:c}}>{v}</div>
+                    <div style={{fontSize:11,color:C.mid,marginTop:2}}>{l}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))',gap:14}}>
+            {[{icon:'🚀',v:projects.length,l:'Proyectos',s:'Plan 2026',c:C.blue},{icon:'✅',v:done,l:'Completadas',s:`de ${total} actividades`,c:C.green},{icon:'⏳',v:inProg,l:'En proceso',s:'actividades activas',c:'#D97706'},{icon:'📋',v:pend,l:'Por iniciar',s:'actividades pendientes',c:C.soft}].map(({icon,v,l,s,c})=>(
+              <div key={l} className="stat-card">
+                <div style={{width:46,height:46,borderRadius:14,background:`${c}18`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,flexShrink:0}}>{icon}</div>
+                <div>
+                  <div style={{fontSize:28,fontWeight:900,color:c,lineHeight:1}}>{v}</div>
+                  <div style={{fontSize:13,fontWeight:600,color:C.blue,marginTop:2}}>{l}</div>
+                  <div style={{fontSize:11,color:C.soft}}>{s}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16}}>
+              <h2 style={{fontSize:18,fontWeight:800,color:C.blue}}>Proyectos</h2>
+              <button onClick={()=>setView('tasks')} style={{background:'none',border:'none',color:C.green,cursor:'pointer',fontSize:14,fontWeight:600}}>Ver todas las actividades →</button>
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(270px,1fr))',gap:16}}>
+              {projects.map(p=>(
+                <ProjectCard key={p.id} project={p} tasks={getProjTasks(p.id)} progress={getProgress(p.id)} onClick={()=>setView('tasks')}/>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    /* ── STATUS SELECT ── */
+    function StatusSelect({ value, onChange }) {
+      const cls=value==='Completado'?'status-pill status-ok':value==='En proceso'?'status-pill status-en':'status-pill status-sin';
+      return <select value={value} onChange={e=>onChange(e.target.value)} className={cls}><option>Sin iniciar</option><option>En proceso</option><option>Completado</option></select>;
+    }
+
+    /* ── RESPONSIBLE SELECT ── */
+    function ResponsibleSelect({ value, onChange, team }) {
+      return (
+        <select value={value||''} onChange={e=>onChange(e.target.value||null)} className="resp-select"
+          style={{color:value?C.text:C.soft}}>
+          <option value="">— Asignar —</option>
+          {(team||[]).map(m=><option key={m.id} value={m.name}>{m.name}</option>)}
+        </select>
+      );
+    }
+
+    /* ── TASK ROW ── */
+    function TaskRow({ task, index, updateTask, deleteTask, team }) {
+      const [obs,setObs]=useState(task.observations||'');
+      const [confirming,setConfirming]=useState(false);
+      const done=task.status==='Completado';
+
+      function handleDelete(e){
+        e.stopPropagation();
+        if(confirming){ deleteTask(task.id); }
+        else{ setConfirming(true); setTimeout(()=>setConfirming(false),3000); }
+      }
+
+      return (
+        <tr className="task-row">
+          <td style={{padding:'10px 12px',color:C.soft,fontSize:11,fontFamily:'monospace',textAlign:'center',width:36}}>{index+1}</td>
+          <td style={{padding:'10px 16px',minWidth:220}}>
+            <div style={{display:'flex',alignItems:'center',gap:8}}>
+              <span style={{width:7,height:7,borderRadius:'50%',flexShrink:0,background:done?C.green:task.status==='En proceso'?'#D97706':C.soft}}/>
+              <span style={{fontSize:13,fontWeight:500,color:done?C.soft:C.text,textDecoration:done?'line-through':'none'}}>{task.name}</span>
+            </div>
+          </td>
+          <td style={{padding:'10px 12px',textAlign:'center'}}>
+            <StatusSelect value={task.status} onChange={v=>updateTask(task.id,{status:v})}/>
+          </td>
+          <td style={{padding:'10px 8px',minWidth:145}}>
+            <ResponsibleSelect value={task.responsible} onChange={v=>updateTask(task.id,{responsible:v})} team={team}/>
+          </td>
+          <td style={{padding:'10px 8px',minWidth:145}}>
+            <input type="date" className="input-inline" style={{fontSize:12}}
+              value={task.scheduled_date?task.scheduled_date.slice(0,10):''}
+              onChange={e=>updateTask(task.id,{scheduled_date:e.target.value||null})}/>
+          </td>
+          <td style={{padding:'10px 8px',minWidth:190}}>
+            <input className="input-inline" placeholder="Agregar nota…" value={obs}
+              onChange={e=>setObs(e.target.value)}
+              onBlur={()=>{if(obs!==(task.observations||''))updateTask(task.id,{observations:obs});}}/>
+          </td>
+          <td style={{padding:'10px 8px',width:60,textAlign:'center'}}>
+            <button className="delete-btn" onClick={handleDelete}
+              title={confirming?'Clic de nuevo para confirmar':'Eliminar actividad'}
+              style={{opacity:confirming?1:undefined,color:confirming?'#C0392B':undefined,
+                background:confirming?'rgba(192,57,43,0.1)':undefined,fontWeight:confirming?700:undefined}}>
+              {confirming?'✓?':'🗑'}
+            </button>
+          </td>
+        </tr>
+      );
+    }
+
+    /* ── ADD TASK ROW ── */
+    function AddTaskRow({ projectId, maxOrderIndex, onAdd }) {
+      const [active,setActive]=useState(false);
+      const [name,setName]=useState('');
+      const ref=useRef(null);
+      function activate(){ setActive(true); setTimeout(()=>ref.current?.focus(),50); }
+      async function confirm(){ const n=name.trim(); if(!n){setActive(false);return;} await onAdd(projectId,n,maxOrderIndex+1); setName('');setActive(false); }
+      if(!active) return (
+        <tr><td colSpan={6} className="add-row-cell">
+          <button onClick={activate} style={{background:'none',border:'none',cursor:'pointer',display:'flex',alignItems:'center',gap:6,color:C.green,fontSize:13,fontWeight:600,padding:'2px 4px',borderRadius:6}}>
+            <span style={{fontSize:20,lineHeight:1}}>+</span> Agregar actividad
+          </button>
+        </td></tr>
+      );
+      return (
+        <tr style={{background:'#F4F8F4'}}>
+          <td style={{color:C.soft,fontSize:11,textAlign:'center',padding:'10px 12px'}}>—</td>
+          <td colSpan={5} style={{padding:'8px 12px'}}>
+            <div style={{display:'flex',alignItems:'center',gap:8}}>
+              <input ref={ref} value={name} onChange={e=>setName(e.target.value)}
+                onKeyDown={e=>{if(e.key==='Enter')confirm();if(e.key==='Escape'){setActive(false);setName('');}}}
+                placeholder="Nombre de la actividad… (Enter para guardar, Esc para cancelar)"
+                style={{flex:1,background:'#fff',border:`1.5px solid ${C.green}`,borderRadius:8,padding:'7px 12px',fontSize:13,color:C.text,outline:'none',fontFamily:'inherit'}}/>
+              <button onClick={confirm} className="btn-green" style={{padding:'7px 14px',whiteSpace:'nowrap'}}>Guardar</button>
+              <button onClick={()=>{setActive(false);setName('');}} style={{background:'none',border:'none',cursor:'pointer',color:C.soft,fontSize:20,lineHeight:1}}>✕</button>
+            </div>
+          </td>
+        </tr>
+      );
+    }
+
+    /* ── PROJECT SECTION ── */
+    function ProjectSection({ project, tasks, progress, updateTask, addTask, deleteTask, team }) {
+      const [open,setOpen]=useState(true);
+      const done=tasks.filter(t=>t.status==='Completado').length;
+      const inProg=tasks.filter(t=>t.status==='En proceso').length;
+      const color=pctColor(progress);
+      const maxOi=tasks.reduce((m,t)=>Math.max(m,t.order_index||0),0);
+      return (
+        <div className="card" style={{overflow:'hidden',marginBottom:16}}>
+          <div className="project-header" onClick={()=>setOpen(o=>!o)}>
+            <div style={{display:'flex',alignItems:'center',gap:12}}>
+              <div style={{width:40,height:40,borderRadius:12,background:C.beige,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,flexShrink:0}}>{project.icon}</div>
+              <div>
+                <div style={{fontWeight:700,fontSize:15,color:C.blue}}>{project.name}</div>
+                <div style={{fontSize:11,color:C.soft,marginTop:2}}>{done} completadas · {inProg} en proceso · {tasks.length} totales</div>
+              </div>
+            </div>
+            <div style={{display:'flex',alignItems:'center',gap:14,flexShrink:0}}>
+              <div style={{display:'flex',alignItems:'center',gap:10}}>
+                <div style={{width:110,height:6,background:C.lg,borderRadius:99,overflow:'hidden'}}>
+                  <div className="progress-bar" style={{height:'100%',width:`${progress}%`,background:color,borderRadius:99}}/>
+                </div>
+                <span style={{fontSize:13,fontWeight:700,color,width:38,textAlign:'right'}}>{progress}%</span>
+              </div>
+              <span style={{color:C.soft,fontSize:14,transition:'transform 0.2s',display:'inline-block',transform:open?'rotate(0deg)':'rotate(-90deg)'}}>▾</span>
+            </div>
+          </div>
+          {open && (
+            <div style={{borderTop:`1px solid ${C.border}`,overflowX:'auto'}}>
+              <table style={{width:'100%',minWidth:760,borderCollapse:'collapse'}}>
+                <thead>
+                  <tr style={{background:'#F7F4EE'}}>
+                    {['#','ACTIVIDAD','ESTADO','RESPONSABLE','FECHA PROGRAMADA','OBSERVACIONES',''].map(h=>(
+                      <th key={h} style={{padding:'10px 12px',textAlign:'left',fontSize:10,fontWeight:700,letterSpacing:'0.5px',color:C.mid,textTransform:'uppercase',whiteSpace:'nowrap',borderBottom:`1px solid ${C.border}`}}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
                 <tbody>
-                  {byProject.map(({p,l,pr,c,s})=>(
-                    <tr key={p} style={{borderBottom:`1px solid ${C.sageLight}`}}>
-                      <td style={{padding:'10px 12px',fontWeight:'600',color:C.dark}}>{p}</td>
-                      <td style={{padding:'10px 12px',color:C.light,fontWeight:'700'}}>{l}</td>
-                      <td style={{padding:'10px 12px',color:C.medium,fontWeight:'700'}}>{pr}</td>
-                      <td style={{padding:'10px 12px',color:C.dark,fontWeight:'700'}}>{c}</td>
-                      <td style={{padding:'10px 12px',color:'#D97706',fontWeight:'700'}}>{s}</td>
-                      <td style={{padding:'10px 12px',color:'#6B7280'}}>{pct(pr,l)}%</td>
-                      <td style={{padding:'10px 12px',color:'#6B7280'}}>{pct(s,pr)}%</td>
-                    </tr>
-                  ))}
+                  {tasks.map((t,i)=><TaskRow key={t.id} task={t} index={i} updateTask={updateTask} deleteTask={deleteTask} team={team}/>)}
+                  <AddTaskRow projectId={project.id} maxOrderIndex={maxOi} onAdd={addTask}/>
                 </tbody>
               </table>
             </div>
-          </div>
-        ) : (
-          <div style={{textAlign:'center',padding:'48px',color:'#9CA3AF',fontSize:'15px'}}>
-            No hay datos para el rango y proyecto seleccionado.
-            <br/><span style={{fontSize:'13px'}}>Ingresa registros en Visitas, Leads y Ventas.</span>
-          </div>
-        )}
-      </>}
-    </div>
-  );
-}
-
-function MetasVentasTab() {
-  const now = new Date();
-  const [year,setYear]           = useState(now.getFullYear());
-  const [proj,setProj]           = useState(PROJECTS[0]);
-  const [loading,setLoading]     = useState(false);
-  const [ventasPorMes,setVentasPorMes] = useState({});
-  const [leadsPorMes,setLeadsPorMes]   = useState({});
-  const [metas,setMetas]         = useState({});
-
-  useEffect(()=>{
-    let cancelled = false;
-    const load = async () => {
-      setLoading(true);
-      try {
-        const from = `${year}-01-01`;
-        const to   = `${year}-12-31`;
-        const metaKeys = Array.from({length:12},(_,i)=>`${year}-${String(i+1).padStart(2,'0')}-${proj}`);
-        const [vData, lData, metaBatch] = await Promise.all([
-          DB.query('ventas', from, to, proj),
-          DB.query('leads',  from, to, proj),
-          DB.getMetasBatch(metaKeys),
-        ]);
-        if (!cancelled) {
-          const vByM = {};
-          vData.forEach(r=>{ const m=r.date.slice(5,7); vByM[m]=(vByM[m]||0)+(r.ventas||0); });
-          setVentasPorMes(vByM);
-          const lByM = {};
-          lData.forEach(r=>{ const m=r.date.slice(5,7); lByM[m]=(lByM[m]||0)+(r.keybe||0)+(r.sico||0); });
-          setLeadsPorMes(lByM);
-          const mObj = {};
-          metaKeys.forEach((k,i)=>{ mObj[String(i+1).padStart(2,'0')] = metaBatch[k] ?? 0; });
-          setMetas(mObj);
-        }
-      } catch(e){ console.error(e); }
-      if (!cancelled) setLoading(false);
-    };
-    load(); return ()=>{ cancelled=true; };
-  },[year,proj]);
-
-  const handleMeta = async (monthStr, val) => {
-    const numVal = Math.max(0, Number(val));
-    setMetas(m=>({...m,[monthStr]:numVal}));
-    try { await DB.saveMeta(`${year}-${monthStr}-${proj}`, numVal); }
-    catch(e){ console.error(e); }
-  };
-
-  const currentYM = today().slice(0,7);
-  const sel = {padding:'8px 12px',borderRadius:'8px',border:`1.5px solid ${C.sage}`,fontSize:'14px',color:C.dark,background:'white'};
-  const years = [now.getFullYear()-1, now.getFullYear(), now.getFullYear()+1];
-
-  const totMeta  = Object.values(metas).reduce((s,v)=>s+(v||0),0);
-  const totVenta = Object.values(ventasPorMes).reduce((s,v)=>s+(v||0),0);
-  const totLeads = Object.values(leadsPorMes).reduce((s,v)=>s+(v||0),0);
-
-  return (
-    <div>
-      <div style={{background:'white',borderRadius:'12px',padding:'16px',boxShadow:'0 1px 6px rgba(0,0,0,0.08)',marginBottom:'20px'}}>
-        <div style={{display:'flex',flexWrap:'wrap',gap:'12px',alignItems:'flex-end'}}>
-          <div>
-            <label style={{fontSize:'12px',fontWeight:'600',color:'#6B7280',display:'block',marginBottom:'4px'}}>PROYECTO</label>
-            <select value={proj} onChange={e=>setProj(e.target.value)} style={sel}>
-              {PROJECTS.map(p=><option key={p}>{p}</option>)}
-            </select>
-          </div>
-          <div>
-            <label style={{fontSize:'12px',fontWeight:'600',color:'#6B7280',display:'block',marginBottom:'4px'}}>AÑO</label>
-            <select value={year} onChange={e=>setYear(Number(e.target.value))} style={sel}>
-              {years.map(y=><option key={y}>{y}</option>)}
-            </select>
-          </div>
+          )}
         </div>
-      </div>
+      );
+    }
 
-      {loading ? <Spinner/> : (
-        <div style={{background:'white',borderRadius:'12px',padding:'20px',boxShadow:'0 1px 6px rgba(0,0,0,0.08)'}}>
-          <div style={{fontWeight:'700',color:C.dark,fontSize:'15px',marginBottom:'4px'}}>{proj} — {year}</div>
-          <div style={{fontSize:'12px',color:'#9CA3AF',marginBottom:'20px'}}>
-            Edita la meta mensual haciendo clic en el campo. Las ventas y porcentajes se actualizan automáticamente.
+    /* ── TASKS VIEW ── */
+    function TasksView({ projects, tasks, updateTask, addTask, deleteTask, team, getProgress, getProjTasks, onOpenTeam }) {
+      const [search,setSearch]=useState('');
+      const [filter,setFilter]=useState('Todos');
+      const visible=useMemo(()=>
+        projects.map(p=>({p,t:getProjTasks(p.id)}))
+          .map(({p,t})=>{
+            let ft=t;
+            if(filter!=='Todos') ft=ft.filter(x=>x.status===filter);
+            if(search.trim()){ const q=search.toLowerCase(); ft=ft.filter(x=>x.name.toLowerCase().includes(q)||(x.responsible||'').toLowerCase().includes(q)); }
+            return {p,t,ft};
+          })
+          .filter(({ft})=>ft.length>0||filter==='Todos')
+      ,[projects,tasks,filter,search]);
+
+      return (
+        <div className="fade-in" style={{padding:'28px 0',display:'flex',flexDirection:'column',gap:20}}>
+          <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',flexWrap:'wrap',gap:12}}>
+            <div>
+              <h1 style={{fontSize:26,fontWeight:900,color:C.blue}}>Proyectos y Actividades</h1>
+              <p style={{color:C.mid,fontSize:14,marginTop:4}}>{projects.length} proyectos · {tasks.length} actividades en total</p>
+            </div>
+            <button onClick={onOpenTeam} className="btn-green" style={{display:'flex',alignItems:'center',gap:6}}>
+              👥 Gestionar Equipo
+            </button>
           </div>
+          <div style={{display:'flex',flexWrap:'wrap',gap:10,alignItems:'center'}}>
+            <div style={{position:'relative'}}>
+              <span style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',fontSize:14,color:C.soft}}>🔍</span>
+              <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar actividad o responsable…"
+                style={{background:'#fff',border:`1px solid ${C.border}`,borderRadius:10,padding:'8px 12px 8px 32px',color:C.text,fontSize:13,outline:'none',fontFamily:'inherit',width:280}}/>
+            </div>
+            {['Todos','Sin iniciar','En proceso','Completado'].map(s=>{
+              const active=filter===s;
+              const col=s==='Completado'?C.green:s==='En proceso'?'#D97706':s==='Sin iniciar'?C.mid:C.blue;
+              return (
+                <button key={s} onClick={()=>setFilter(s)}
+                  style={{padding:'6px 14px',borderRadius:8,border:`1px solid ${C.border}`,background:active?col:'transparent',color:active?'#fff':col,fontSize:12,fontWeight:600,cursor:'pointer',transition:'all 0.15s'}}>
+                  {s}
+                </button>
+              );
+            })}
+          </div>
+          {visible.length===0
+            ? <div className="card" style={{padding:48,textAlign:'center'}}><div style={{fontSize:40,marginBottom:10}}>🔎</div><div style={{color:C.soft}}>No hay resultados</div></div>
+            : visible.map(({p,t,ft})=>(
+              <ProjectSection key={p.id} project={p} tasks={filter==='Todos'?t:ft} progress={getProgress(p.id)} updateTask={updateTask} addTask={addTask} deleteTask={deleteTask} team={team}/>
+            ))
+          }
+        </div>
+      );
+    }
 
-          <div style={{display:'flex',gap:'12px',marginBottom:'20px',flexWrap:'wrap'}}>
-            {[
-              {label:'Meta anual',    val:totMeta,  color:C.dark},
-              {label:'Venta anual',   val:totVenta, color:'#D97706'},
-              {label:'Cumplimiento',  val:totMeta>0?`${Math.round(totVenta/totMeta*100)}%`:'—', color:totMeta>0&&totVenta>=totMeta?'#059669':'#DC2626'},
-              {label:'Conv. L→V',     val:totLeads>0?`${Math.round(totVenta/totLeads*100)}%`:'—', color:C.medium},
-            ].map(({label,val,color})=>(
-              <div key={label} style={{flex:'1',minWidth:'110px',background:C.sageLight,borderRadius:'10px',padding:'12px 16px',textAlign:'center'}}>
-                <div style={{fontSize:'11px',color:'#6B7280',fontWeight:'600',textTransform:'uppercase',marginBottom:'4px'}}>{label}</div>
-                <div style={{fontSize:'22px',fontWeight:'800',color}}>{val}</div>
+    /* ── NAVBAR ── */
+    function Navbar({ view, setView, globalPct, done, total, onConfig }) {
+      return (
+        <header style={{position:'sticky',top:0,zIndex:50,borderBottom:`1px solid ${C.border}`,background:'rgba(240,235,226,0.96)',backdropFilter:'blur(10px)'}}>
+          <div style={{maxWidth:1400,margin:'0 auto',padding:'0 24px',height:60,display:'flex',alignItems:'center',justifyContent:'space-between',gap:16}}>
+            <div style={{display:'flex',alignItems:'center',gap:10,flexShrink:0}}>
+              <div style={{width:32,height:32,borderRadius:8,background:C.blue,display:'flex',alignItems:'center',justifyContent:'center',fontSize:18}}>📊</div>
+              <div>
+                <div style={{fontSize:13,fontWeight:700,color:C.blue,lineHeight:1.2}}>Plan Mercadeo 2026</div>
+                <div style={{fontSize:10,color:C.mid}}>Tierra Grata & Co.</div>
               </div>
-            ))}
+            </div>
+            <div style={{display:'flex',alignItems:'center',gap:10,flex:1,maxWidth:260}}>
+              <div style={{flex:1,height:4,background:C.lg,borderRadius:99,overflow:'hidden'}}>
+                <div className="progress-bar" style={{height:'100%',width:`${globalPct}%`,background:`linear-gradient(90deg,${C.blue},${C.green})`,borderRadius:99}}/>
+              </div>
+              <span style={{fontSize:11,color:C.mid,whiteSpace:'nowrap'}}><strong style={{color:C.blue}}>{done}</strong>/{total}</span>
+            </div>
+            <div style={{display:'flex',alignItems:'center',gap:8}}>
+              <div style={{background:'#fff',border:`1px solid ${C.border}`,borderRadius:12,padding:4,display:'flex',gap:4}}>
+                <button onClick={()=>setView('dashboard')} className={`nav-tab${view==='dashboard'?' active':''}`}>📊 Dashboard</button>
+                <button onClick={()=>setView('tasks')}     className={`nav-tab${view==='tasks'?' active':''}`}>✅ Proyectos</button>
+              </div>
+              <button onClick={onConfig} title="Configurar Supabase"
+                style={{width:34,height:34,borderRadius:8,background:'#fff',border:`1px solid ${C.border}`,cursor:'pointer',fontSize:16,display:'flex',alignItems:'center',justifyContent:'center',color:C.mid}}>⚙️</button>
+            </div>
           </div>
+        </header>
+      );
+    }
 
-          <div style={{overflowX:'auto'}}>
-            <table style={{width:'100%',borderCollapse:'collapse',fontSize:'13px'}}>
-              <thead>
-                <tr style={{background:C.dark}}>
-                  <th style={{padding:'11px 14px',textAlign:'left',fontWeight:'700',color:'white',borderRadius:'0'}}>Mes</th>
-                  <th style={{padding:'11px 14px',textAlign:'center',fontWeight:'700',color:'white'}}>Meta</th>
-                  <th style={{padding:'11px 14px',textAlign:'center',fontWeight:'700',color:'white'}}>Venta Real</th>
-                  <th style={{padding:'11px 14px',textAlign:'center',fontWeight:'700',color:'white'}}>Cumplimiento</th>
-                  <th style={{padding:'11px 14px',textAlign:'center',fontWeight:'700',color:'white'}}>Conv. Leads→Ventas</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Array.from({length:12},(_,i)=>{
-                  const monthStr = String(i+1).padStart(2,'0');
-                  const ym       = `${year}-${monthStr}`;
-                  const metaVal  = metas[monthStr] ?? 0;
-                  const ventaVal = ventasPorMes[monthStr] || 0;
-                  const leadsVal = leadsPorMes[monthStr] || 0;
-                  const cumpl    = metaVal > 0 ? Math.round(ventaVal/metaVal*100) : null;
-                  const conv     = leadsVal > 0 ? Math.round(ventaVal/leadsVal*100) : null;
-                  const isFuture = ym > currentYM;
-                  const cumplColor = cumpl === null ? '#9CA3AF' : cumpl >= 100 ? '#059669' : cumpl >= 70 ? '#D97706' : '#DC2626';
-                  const isEven   = i % 2 === 0;
-                  return (
-                    <tr key={monthStr} style={{
-                      background: isFuture ? '#FAFAFA' : (isEven ? 'white' : C.sageLight),
-                      opacity: isFuture ? 0.55 : 1,
-                      borderBottom:`1px solid ${C.sage}`,
-                    }}>
-                      <td style={{padding:'10px 14px',fontWeight:'600',color:C.dark}}>
-                        {MONTHS_ES[i]} {year}
-                        {ym===currentYM && <span style={{marginLeft:'8px',fontSize:'10px',background:C.medium,color:'white',padding:'1px 6px',borderRadius:'99px',fontWeight:'700'}}>HOY</span>}
-                      </td>
-                      <td style={{padding:'8px 14px',textAlign:'center'}}>
-                        <input
-                          type="number" min="0"
-                          value={metaVal}
-                          disabled={isFuture}
-                          onChange={e=>handleMeta(monthStr, e.target.value)}
-                          style={{width:'72px',padding:'6px 8px',borderRadius:'6px',
-                            border:`1.5px solid ${isFuture?'#E5E7EB':C.medium}`,
-                            fontSize:'15px',fontWeight:'700',textAlign:'center',
-                            color:isFuture?'#9CA3AF':C.dark,
-                            background:isFuture?'#F3F4F6':C.sageLight,
-                            cursor:isFuture?'not-allowed':'text',
-                          }}
-                        />
-                      </td>
-                      <td style={{padding:'10px 14px',textAlign:'center',fontWeight:'700',
-                        color:ventaVal>0?'#D97706':'#9CA3AF',fontSize:'15px'}}>
-                        {ventaVal}
-                      </td>
-                      <td style={{padding:'10px 14px',textAlign:'center',fontWeight:'700',color:cumplColor,fontSize:'14px'}}>
-                        {cumpl !== null ? (
-                          <span>
-                            {cumpl}%
-                            <span style={{display:'block',fontSize:'10px',fontWeight:'500',color:'#9CA3AF',marginTop:'1px'}}>
-                              {ventaVal} de {metaVal}
-                            </span>
-                          </span>
-                        ) : '—'}
-                      </td>
-                      <td style={{padding:'10px 14px',textAlign:'center',fontWeight:'700',
-                        color:conv!==null?C.medium:'#9CA3AF',fontSize:'14px'}}>
-                        {conv !== null ? (
-                          <span>
-                            {conv}%
-                            <span style={{display:'block',fontSize:'10px',fontWeight:'500',color:'#9CA3AF',marginTop:'1px'}}>
-                              {ventaVal} de {leadsVal}
-                            </span>
-                          </span>
-                        ) : '—'}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-              <tfoot>
-                <tr style={{background:C.dark}}>
-                  <td style={{padding:'11px 14px',fontWeight:'700',color:'white'}}>Total {year}</td>
-                  <td style={{padding:'11px 14px',textAlign:'center',fontWeight:'800',color:'white',fontSize:'15px'}}>{totMeta}</td>
-                  <td style={{padding:'11px 14px',textAlign:'center',fontWeight:'800',color:'#F0EBE0',fontSize:'15px'}}>{totVenta}</td>
-                  <td style={{padding:'11px 14px',textAlign:'center',fontWeight:'800',fontSize:'15px',
-                    color:totMeta>0&&totVenta>=totMeta?'#6EE7B7':'#FCA5A5'}}>
-                    {totMeta>0?`${Math.round(totVenta/totMeta*100)}%`:'—'}
-                  </td>
-                  <td style={{padding:'11px 14px',textAlign:'center',fontWeight:'800',color:'#A7F3D0',fontSize:'15px'}}>
-                    {totLeads>0?`${Math.round(totVenta/totLeads*100)}%`:'—'}
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
+    /* ── APP ── */
+    function App() {
+      const [view,setView]=useState('dashboard');
+      const [projects,setProjects]=useState([]);
+      const [tasks,setTasks]=useState([]);
+      const [team,setTeam]=useState([]);
+      const [loading,setLoading]=useState(true);
+      const [error,setError]=useState(null);
+      const [setup,setSetup]=useState(false);
+      const [seeding,setSeeding]=useState(false);
+      const [teamOpen,setTeamOpen]=useState(false);
+
+      const loadData=useCallback(async()=>{
+        const client=getClient();
+        if(!client){setLoading(false);setSetup(true);return;}
+        try{
+          const [{data:ps,error:e1},{data:ts,error:e2},{data:tm,error:e3}]=await Promise.all([
+            client.from('projects').select('*').order('order_index'),
+            client.from('tasks').select('*').order('order_index'),
+            client.from('team_members').select('*').order('name'),
+          ]);
+          if(e1)throw e1; if(e2)throw e2;
+          if(!ps?.length){await seedDB(client);return;}
+          setProjects(ps); setTasks(ts||[]);
+          setTeam(tm||[]);
+        }catch(e){setError(e.message);}
+        finally{setLoading(false);}
+      },[]);
+
+      async function seedDB(client){
+        setSeeding(true);
+        try{
+          for(const proj of INITIAL_PROJECTS){
+            const{data:p,error:e1}=await client.from('projects').insert({name:proj.name,icon:proj.icon,order_index:proj.order_index}).select().single();
+            if(e1)throw e1;
+            const{error:e2}=await client.from('tasks').insert(proj.tasks.map((name,i)=>({project_id:p.id,name,status:'Sin iniciar',order_index:i})));
+            if(e2)throw e2;
+          }
+          // Seed equipo por defecto
+          await client.from('team_members').insert(DEFAULT_TEAM.map(name=>({name})));
+        }catch(e){setError('Error inicializando: '+e.message);}
+        finally{setSeeding(false);loadData();}
+      }
+
+      useEffect(()=>{
+        loadData();
+        const client=getClient();
+        if(!client)return;
+        const ch=client.channel('rt-all')
+          .on('postgres_changes',{event:'*',schema:'public',table:'tasks'},payload=>{
+            if(payload.eventType==='INSERT') setTasks(prev=>[...prev,payload.new]);
+            else if(payload.eventType==='UPDATE') setTasks(prev=>prev.map(t=>t.id===payload.new.id?payload.new:t));
+            else if(payload.eventType==='DELETE') setTasks(prev=>prev.filter(t=>t.id!==payload.old.id));
+          })
+          .on('postgres_changes',{event:'*',schema:'public',table:'team_members'},payload=>{
+            if(payload.eventType==='INSERT') setTeam(prev=>[...prev,payload.new].sort((a,b)=>a.name.localeCompare(b.name)));
+            else if(payload.eventType==='DELETE') setTeam(prev=>prev.filter(m=>m.id!==payload.old.id));
+          })
+          .subscribe();
+        return()=>client.removeChannel(ch);
+      },[]);
+
+      async function updateTask(id,updates){
+        setTasks(prev=>prev.map(t=>t.id===id?{...t,...updates}:t));
+        const client=getClient();
+        if(client) await client.from('tasks').update({...updates,updated_at:new Date().toISOString()}).eq('id',id);
+      }
+
+      async function addTask(projectId,name,orderIndex){
+        const client=getClient();
+        if(!client)return;
+        const{data,error}=await client.from('tasks').insert({project_id:projectId,name,status:'Sin iniciar',order_index:orderIndex}).select().single();
+        if(!error&&data) setTasks(prev=>[...prev,data]);
+      }
+
+      async function deleteTask(id){
+        setTasks(prev=>prev.filter(t=>t.id!==id));
+        const client=getClient();
+        if(client) await client.from('tasks').delete().eq('id',id);
+      }
+
+      async function addMember(name){
+        const client=getClient(); if(!client)return;
+        const{data,error}=await client.from('team_members').insert({name}).select().single();
+        if(!error&&data) setTeam(prev=>[...prev,data].sort((a,b)=>a.name.localeCompare(b.name)));
+      }
+
+      async function removeMember(id){
+        setTeam(prev=>prev.filter(m=>m.id!==id));
+        const client=getClient();
+        if(client) await client.from('team_members').delete().eq('id',id);
+      }
+
+      const getProjTasks=id=>tasks.filter(t=>t.project_id===id).sort((a,b)=>(a.order_index||0)-(b.order_index||0));
+      const getProgress=id=>{
+        const t=getProjTasks(id);
+        if(!t.length) return 0;
+        const pts = t.reduce((sum,x)=> sum + (x.status==='Completado'?1 : x.status==='En proceso'?0.5 : 0), 0);
+        return Math.round((pts/t.length)*100);
+      };
+      const total=tasks.length,done=tasks.filter(t=>t.status==='Completado').length;
+      const globalPts=tasks.reduce((s,t)=>s+(t.status==='Completado'?1:t.status==='En proceso'?0.5:0),0);
+      const globalPct=total?Math.round((globalPts/total)*100):0;
+
+      if(loading||seeding) return (
+        <div style={{minHeight:'100vh',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:14,background:C.beige}}>
+          <div className="spinner" style={{width:44,height:44,border:`4px solid ${C.lg}`,borderTopColor:C.blue,borderRadius:'50%'}}/>
+          <p style={{color:C.mid,fontSize:14}}>{seeding?'Inicializando datos por primera vez...':'Cargando...'}</p>
+        </div>
+      );
+
+      if(error) return (
+        <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',padding:20,background:C.beige}}>
+          <div className="card fade-in" style={{maxWidth:480,width:'100%',padding:36,textAlign:'center'}}>
+            <div style={{fontSize:48,marginBottom:12}}>⚠️</div>
+            <h2 style={{fontSize:20,fontWeight:800,color:C.blue,marginBottom:8}}>Error de conexión</h2>
+            <p style={{color:C.mid,fontSize:13,marginBottom:20}}>{error}</p>
+            <button className="btn-primary" onClick={()=>{setError(null);setSetup(true);}}>Reconfigurar Supabase</button>
           </div>
         </div>
-      )}
-    </div>
-  );
-}
+      );
 
-const TABS = [
-  {id:'visitas',   label:'Visitas'},
-  {id:'leads',     label:'Prospectos'},
-  {id:'ventas',    label:'Ventas'},
-  {id:'metas',     label:'Metas de Venta'},
-  {id:'dashboard', label:'Dashboard'},
-];
-
-function App() {
-  const [tab,setTab] = useState('visitas');
-  return (
-    <div style={{minHeight:'100vh',background:C.cream}}>
-      <div style={{background:C.dark,padding:'16px 24px',boxShadow:'0 2px 8px rgba(26,77,92,0.25)'}}>
-        <div style={{maxWidth:'860px',margin:'0 auto',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-          <TGLogo/>
-          <div style={{fontSize:'11px',color:'rgba(200,213,200,0.7)',fontWeight:'500',letterSpacing:'0.5px',textAlign:'right'}}>
-            Funnel de Ventas<br/><span style={{fontSize:'10px'}}>v2.1 — Metas de Venta</span>
+      return (
+        <>
+          {setup&&<SetupModal onSave={()=>{setSetup(false);setLoading(true);loadData();}}/>}
+          {teamOpen&&<TeamModal onClose={()=>setTeamOpen(false)} team={team} addMember={addMember} removeMember={removeMember}/>}
+          <Navbar view={view} setView={setView} globalPct={globalPct} done={done} total={total} onConfig={()=>setSetup(true)}/>
+          <div style={{maxWidth:1400,margin:'0 auto',padding:'0 24px'}}>
+            {view==='dashboard'
+              ?<Dashboard projects={projects} tasks={tasks} getProgress={getProgress} getProjTasks={getProjTasks} setView={setView}/>
+              :<TasksView projects={projects} tasks={tasks} updateTask={updateTask} addTask={addTask} deleteTask={deleteTask} team={team} getProgress={getProgress} getProjTasks={getProjTasks} onOpenTeam={()=>setTeamOpen(true)}/>
+            }
           </div>
-        </div>
-      </div>
-      <div style={{background:C.dark,borderTop:'1px solid rgba(255,255,255,0.08)'}}>
-        <div style={{maxWidth:'860px',margin:'0 auto',display:'flex',overflowX:'auto'}}>
-          {TABS.map(t=>(
-            <button key={t.id} onClick={()=>setTab(t.id)} style={{
-              flex:1,padding:'13px 8px',border:'none',cursor:'pointer',
-              fontSize:'12px',fontWeight:'700',letterSpacing:'0.3px',whiteSpace:'nowrap',
-              background:tab===t.id?C.medium:'transparent',
-              color:tab===t.id?'white':'rgba(200,213,200,0.65)',
-              borderBottom:tab===t.id?`3px solid ${C.light}`:'3px solid transparent',
-              transition:'all 0.15s',
-            }}>{t.label}</button>
-          ))}
-        </div>
-      </div>
-      <div style={{maxWidth:'860px',margin:'0 auto',padding:'24px 16px'}}>
-        {tab==='visitas'   && <VisitasTab/>}
-        {tab==='leads'     && <LeadsTab/>}
-        {tab==='ventas'    && <VentasTab/>}
-        {tab==='metas'     && <MetasVentasTab/>}
-        {tab==='dashboard' && <DashboardTab onGoToMetas={()=>setTab('metas')}/>}
-      </div>
-    </div>
-  );
-}
+        </>
+      );
+    }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
-</script>
+    ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+  </script>
 </body>
 </html>
