@@ -539,6 +539,8 @@ function DashboardTab({ onGoToMetas }) {
   const [histVisitas,setHistVisitas] = useState([]);
   const [histLeads,setHistLeads]     = useState([]);
   const [histVentas,setHistVentas]   = useState([]);
+  // Ventas del mes completo de la meta (para "Avance actual" y "Faltan", independiente del filtro)
+  const [metaMonthVentas,setMetaMonthVentas] = useState([]);
   const metaKey = `${from.slice(0,7)}-${proj}`;
 
   // Calcular rango de los 3 meses anteriores al mes de la meta (sin incluir el actual)
@@ -556,28 +558,40 @@ function DashboardTab({ onGoToMetas }) {
     };
   })();
 
+  // Rango del mes completo de la meta (para el avance mensual)
+  const metaMonthRange = (() => {
+    const [yr, mo] = from.slice(0,7).split('-').map(Number);
+    const lastDay = new Date(yr, mo, 0).getDate();
+    return {
+      from: `${yr}-${String(mo).padStart(2,'0')}-01`,
+      to:   `${yr}-${String(mo).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`,
+    };
+  })();
+
   useEffect(()=>{
     let cancelled=false;
     const load=async()=>{
       setLoading(true);
       try {
-        const [v,l,s,hv,hl,hs]=await Promise.all([
+        const [v,l,s,hv,hl,hs,mmv]=await Promise.all([
           DB.query('visitas',from,to,proj),
           DB.query('leads',from,to,proj),
           DB.query('ventas',from,to,proj),
           DB.query('visitas',histRange.from,histRange.to,proj),
           DB.query('leads',  histRange.from,histRange.to,proj),
           DB.query('ventas', histRange.from,histRange.to,proj),
+          DB.query('ventas', metaMonthRange.from, metaMonthRange.to, proj),
         ]);
         if (!cancelled){
           setVisitas(v); setLeads(l); setVentas(s);
           setHistVisitas(hv); setHistLeads(hl); setHistVentas(hs);
+          setMetaMonthVentas(mmv);
         }
       } catch(e){ console.error(e); }
       if (!cancelled) setLoading(false);
     };
     load(); return ()=>{ cancelled=true; };
-  },[from,to,proj,histRange.from,histRange.to]);
+  },[from,to,proj,histRange.from,histRange.to,metaMonthRange.from,metaMonthRange.to]);
 
   useEffect(()=>{ DB.getMeta(metaKey).then(v=>setMeta(v)).catch(()=>{}); },[metaKey]);
 
@@ -592,6 +606,9 @@ function DashboardTab({ onGoToMetas }) {
   const histTotProspectos = histVisitas.reduce((s,r)=>s+(r.prospectos||0),0);
   const histTotVentas     = histVentas.reduce((s,r)=>s+(r.ventas||0),0);
   const hasHistVentas     = histTotVentas > 0;
+
+  // Ventas del mes completo de la meta (independiente del filtro) — para Avance y Faltan
+  const metaMonthTotVentas = metaMonthVentas.reduce((s,r)=>s+(r.ventas||0),0);
 
   const byProject = PROJECTS.map(p=>{
     const vR=visitas.filter(r=>r.project===p), lR=leads.filter(r=>r.project===p), sR=ventas.filter(r=>r.project===p);
@@ -690,8 +707,8 @@ function DashboardTab({ onGoToMetas }) {
             {[
               {label:'Prospectos necesarios',  val:meta>0&&hasHistVentas?Math.ceil(meta*histTotLeads/histTotVentas):'—'},
               {label:'Visitas necesarias',     val:meta>0&&hasHistVentas?Math.ceil(meta*histTotProspectos/histTotVentas):'—'},
-              {label:'Avance actual',          val:meta>0?`${totVentas} / ${meta}`:'—'},
-              {label:'Faltan',                 val:meta>0?Math.max(0,meta-totVentas):'—'},
+              {label:'Avance actual',          val:meta>0?`${metaMonthTotVentas} / ${meta}`:'—'},
+              {label:'Faltan',                 val:meta>0?Math.max(0,meta-metaMonthTotVentas):'—'},
             ].map(({label,val})=>(
               <div key={label} style={{background:C.sageLight,borderRadius:'10px',padding:'14px 18px',flex:'1',minWidth:'120px'}}>
                 <div style={{fontSize:'11px',color:'#6B7280',fontWeight:'600',textTransform:'uppercase',marginBottom:'4px'}}>{label}</div>
