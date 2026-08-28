@@ -18,6 +18,52 @@
   </style>
 </head>
 <body>
+<div id="tg-auth-gate" style="position:fixed;inset:0;z-index:2147483647;background:linear-gradient(120deg,#184857 0%,#016365 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;padding:24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">
+  <div style="width:32px;height:32px;border:3px solid rgba(255,255,255,.25);border-top-color:#F7A400;border-radius:50%;margin-bottom:18px;animation:tg-auth-spin .8s linear infinite;"></div>
+  <div id="tg-auth-msg" style="font-size:1rem;color:#D4DAD0;max-width:420px;line-height:1.5;">Verificando acceso…</div>
+</div>
+<style>@keyframes tg-auth-spin{to{transform:rotate(360deg);}}</style>
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@3/lib/msal-browser.min.js"></script>
+<script>
+(async function () {
+  var gate = document.getElementById('tg-auth-gate');
+  var msg = document.getElementById('tg-auth-msg');
+  var ALLOWED_DOMAIN = '@tierragrata.co';
+  var msalConfig = {
+    auth: {
+      clientId: '11122dba-bff6-4d19-b020-40d776f0f954',
+      authority: 'https://login.microsoftonline.com/b54d5007-2ca4-4288-b2f4-c6735c13d0f7',
+      redirectUri: window.location.origin + window.location.pathname
+    },
+    cache: { cacheLocation: 'sessionStorage', storeAuthStateInCookie: false }
+  };
+  try {
+    var msalInstance = new msal.PublicClientApplication(msalConfig);
+    await msalInstance.initialize();
+    var response = await msalInstance.handleRedirectPromise();
+    var account = response ? response.account : msalInstance.getActiveAccount();
+    if (!account) {
+      var accounts = msalInstance.getAllAccounts();
+      if (accounts.length > 0) account = accounts[0];
+    }
+    if (!account) {
+      msg.textContent = 'Redirigiendo al inicio de sesión de Microsoft…';
+      await msalInstance.loginRedirect({ scopes: ['User.Read'] });
+      return;
+    }
+    msalInstance.setActiveAccount(account);
+    var email = (account.username || '').toLowerCase();
+    if (!email.endsWith(ALLOWED_DOMAIN)) {
+      msg.innerHTML = 'Acceso restringido.<br>Esta herramienta es exclusiva para el equipo de Tierra Grata & Co.';
+      return;
+    }
+    gate.style.display = 'none';
+  } catch (err) {
+    msg.textContent = 'Error al verificar el acceso. Intenta recargar la página.';
+    console.error(err);
+  }
+})();
+</script>
 <div id="root"></div>
 <script type="text/babel">
 const { useState, useEffect, useCallback } = React;
