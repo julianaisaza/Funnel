@@ -749,6 +749,49 @@ function DashboardTab({ onGoToMetas }) {
             {!hasHistVentas && <span style={{color:'#D97706'}}> · sin ventas registradas en ese periodo</span>}
             {hasHistVentas && <span> · {histTotLeads} prospectos → {histTotProspectos} visitas → {histTotVentas} ventas</span>}
           </div>
+
+          {/* Indicadores de lectura rápida — cuánto cuesta cerrar una venta */}
+          <div style={{display:'flex',flexWrap:'wrap',gap:'12px',marginBottom:'12px'}}>
+            {[
+              {
+                label:'Ventas por cada 100 prospectos',
+                val: hasHistVentas && histTotLeads>0
+                  ? `${Math.round(histTotVentas/histTotLeads*100)} / 100`
+                  : '—',
+                sub: hasHistVentas && histTotLeads>0
+                  ? `${histTotVentas} ventas de ${histTotLeads} prospectos`
+                  : 'sin histórico',
+                color: C.light,
+              },
+              {
+                label:'Visitas para cerrar 1 venta',
+                val: hasHistVentas && histTotProspectos>0
+                  ? (histTotProspectos/histTotVentas).toFixed(1)
+                  : '—',
+                sub: hasHistVentas && histTotProspectos>0
+                  ? `${histTotProspectos} visitas → ${histTotVentas} ventas`
+                  : 'sin histórico',
+                color: C.medium,
+              },
+              {
+                label:'Prospectos para cerrar 1 venta',
+                val: hasHistVentas && histTotLeads>0
+                  ? (histTotLeads/histTotVentas).toFixed(1)
+                  : '—',
+                sub: hasHistVentas && histTotLeads>0
+                  ? `${histTotLeads} prospectos → ${histTotVentas} ventas`
+                  : 'sin histórico',
+                color: C.dark,
+              },
+            ].map(({label,val,sub,color})=>(
+              <div key={label} style={{flex:'1',minWidth:'170px',background:'white',border:`2px solid ${color}`,borderRadius:'10px',padding:'14px 18px'}}>
+                <div style={{fontSize:'11px',color:'#6B7280',fontWeight:'600',textTransform:'uppercase',marginBottom:'6px',letterSpacing:'0.3px'}}>{label}</div>
+                <div style={{fontSize:'26px',fontWeight:'900',color,lineHeight:'1'}}>{val}</div>
+                <div style={{fontSize:'11px',color:'#9CA3AF',marginTop:'6px'}}>{sub}</div>
+              </div>
+            ))}
+          </div>
+
           <div style={{display:'flex',flexWrap:'wrap',gap:'12px'}}>
             {[
               {label:'Prospectos necesarios',  val:meta>0&&hasHistVentas?Math.ceil(meta*histTotLeads/histTotVentas):'—'},
