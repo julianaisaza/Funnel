@@ -169,6 +169,34 @@ function Spinner() {
   );
 }
 
+// Navegador de páginas: muestra « ‹ "X de N" › » y rango de registros visible
+function Paginator({ page, totalPages, totalRecords, pageSize, onPage }) {
+  if (totalPages <= 1) return null;
+  const from = page*pageSize + 1;
+  const to   = Math.min((page+1)*pageSize, totalRecords);
+  const btn  = (disabled) => ({
+    background: disabled ? '#F3F4F6' : C.sageLight,
+    border: `1px solid ${disabled ? '#E5E7EB' : C.sage}`,
+    borderRadius: '6px', padding: '4px 10px', fontSize: '14px', fontWeight: '700',
+    color: disabled ? '#D1D5DB' : C.dark,
+    cursor: disabled ? 'not-allowed' : 'pointer', minWidth: '32px',
+  });
+  return (
+    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:'12px',flexWrap:'wrap',gap:'8px'}}>
+      <div style={{fontSize:'12px',color:'#6B7280'}}>
+        Mostrando <strong>{from}–{to}</strong> de <strong>{totalRecords}</strong>
+      </div>
+      <div style={{display:'flex',alignItems:'center',gap:'4px'}}>
+        <button onClick={()=>onPage(0)}             disabled={page===0}             style={btn(page===0)}             title="Primera página">«</button>
+        <button onClick={()=>onPage(page-1)}        disabled={page===0}             style={btn(page===0)}             title="Anterior">‹</button>
+        <span style={{fontSize:'13px',color:C.dark,fontWeight:'700',padding:'0 10px'}}>Página {page+1} de {totalPages}</span>
+        <button onClick={()=>onPage(page+1)}        disabled={page>=totalPages-1}   style={btn(page>=totalPages-1)}   title="Siguiente">›</button>
+        <button onClick={()=>onPage(totalPages-1)}  disabled={page>=totalPages-1}   style={btn(page>=totalPages-1)}   title="Última página">»</button>
+      </div>
+    </div>
+  );
+}
+
 function HabitCalendar({ project, refreshKey }) {
   const now = new Date();
   const [viewYear,setViewYear]     = useState(now.getFullYear());
@@ -319,10 +347,12 @@ function VisitasTab() {
   const [refreshKey,setRefreshKey]   = useState(0);
   const [records,setRecords]         = useState([]);
   const [loadingRec,setLoadingRec]   = useState(true);
+  const [page,setPage]               = useState(0);
+  const PAGE_SIZE = 20;
 
   const loadRecords = useCallback(async () => {
     setLoadingRec(true);
-    try { const data=await DB.query('visitas','2020-01-01',today(),project); setRecords(data.slice(0,40)); }
+    try { const data=await DB.query('visitas','2020-01-01',today(),project); setRecords(data); setPage(0); }
     catch(e) { console.error(e); }
     setLoadingRec(false);
   },[project]);
@@ -380,7 +410,10 @@ function VisitasTab() {
         </button>
       </div>
       <HabitCalendar project={project} refreshKey={refreshKey}/>
-      {loadingRec ? <Spinner/> : records.length>0 && (
+      {loadingRec ? <Spinner/> : records.length>0 && (() => {
+        const totalPages  = Math.ceil(records.length / PAGE_SIZE);
+        const pageRecords = records.slice(page*PAGE_SIZE, (page+1)*PAGE_SIZE);
+        return (
         <div style={{background:'white',borderRadius:'12px',padding:'20px',boxShadow:'0 1px 6px rgba(0,0,0,0.08)',marginTop:'20px'}}>
           <div style={{fontWeight:'700',color:C.dark,marginBottom:'12px',fontSize:'14px'}}>Registros recientes</div>
           <div style={{overflowX:'auto'}}>
@@ -391,7 +424,7 @@ function VisitasTab() {
                 ))}
               </tr></thead>
               <tbody>
-                {records.map(r=>(
+                {pageRecords.map(r=>(
                   <tr key={r.id} style={{borderBottom:`1px solid ${C.sageLight}`}}>
                     <td style={{padding:'8px 10px',color:C.dark,fontWeight:'600'}}>{r.project}</td>
                     <td style={{padding:'8px 10px',color:'#6B7280'}}>{fmt(r.date)}</td>
@@ -405,8 +438,10 @@ function VisitasTab() {
               </tbody>
             </table>
           </div>
+          <Paginator page={page} totalPages={totalPages} totalRecords={records.length} pageSize={PAGE_SIZE} onPage={setPage}/>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
@@ -421,10 +456,12 @@ function LeadsTab() {
   const [refreshKey,setRefreshKey] = useState(0);
   const [records,setRecords]       = useState([]);
   const [loadingRec,setLoadingRec] = useState(true);
+  const [page,setPage]             = useState(0);
+  const PAGE_SIZE = 20;
 
   const loadRecords = useCallback(async () => {
     setLoadingRec(true);
-    try { const data=await DB.query('leads','2020-01-01',today(),project); setRecords(data.slice(0,40)); }
+    try { const data=await DB.query('leads','2020-01-01',today(),project); setRecords(data); setPage(0); }
     catch(e) { console.error(e); }
     setLoadingRec(false);
   },[project]);
@@ -482,7 +519,10 @@ function LeadsTab() {
         </button>
       </div>
       <HabitCalendar project={project} refreshKey={refreshKey}/>
-      {loadingRec ? <Spinner/> : records.length>0 && (
+      {loadingRec ? <Spinner/> : records.length>0 && (() => {
+        const totalPages  = Math.ceil(records.length / PAGE_SIZE);
+        const pageRecords = records.slice(page*PAGE_SIZE, (page+1)*PAGE_SIZE);
+        return (
         <div style={{background:'white',borderRadius:'12px',padding:'20px',boxShadow:'0 1px 6px rgba(0,0,0,0.08)',marginTop:'20px'}}>
           <div style={{fontWeight:'700',color:C.dark,marginBottom:'12px',fontSize:'14px'}}>Registros recientes</div>
           <div style={{overflowX:'auto'}}>
@@ -493,7 +533,7 @@ function LeadsTab() {
                 ))}
               </tr></thead>
               <tbody>
-                {records.map(r=>(
+                {pageRecords.map(r=>(
                   <tr key={r.id} style={{borderBottom:`1px solid ${C.sageLight}`}}>
                     <td style={{padding:'8px 10px',color:C.dark,fontWeight:'600'}}>{r.project}</td>
                     <td style={{padding:'8px 10px',color:'#6B7280'}}>{fmt(r.date)}</td>
@@ -508,8 +548,10 @@ function LeadsTab() {
               </tbody>
             </table>
           </div>
+          <Paginator page={page} totalPages={totalPages} totalRecords={records.length} pageSize={PAGE_SIZE} onPage={setPage}/>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
@@ -522,10 +564,12 @@ function VentasTab() {
   const [saved,setSaved]     = useState(false);
   const [records,setRecords] = useState([]);
   const [loading,setLoading] = useState(true);
+  const [page,setPage]       = useState(0);
+  const PAGE_SIZE = 20;
 
   const loadRecords = useCallback(async () => {
     setLoading(true);
-    try { const data=await DB.query('ventas','2020-01-01',today(),project); setRecords(data.slice(0,20)); }
+    try { const data=await DB.query('ventas','2020-01-01',today(),project); setRecords(data); setPage(0); }
     catch(e) { console.error(e); }
     setLoading(false);
   },[project]);
@@ -569,7 +613,10 @@ function VentasTab() {
           {saved?'¡Guardado!':saving?'Guardando...':'Guardar Cierre Semanal'}
         </button>
       </div>
-      {loading ? <Spinner/> : records.length>0 && (
+      {loading ? <Spinner/> : records.length>0 && (() => {
+        const totalPages  = Math.ceil(records.length / PAGE_SIZE);
+        const pageRecords = records.slice(page*PAGE_SIZE, (page+1)*PAGE_SIZE);
+        return (
         <div style={{background:'white',borderRadius:'12px',padding:'20px',boxShadow:'0 1px 6px rgba(0,0,0,0.08)'}}>
           <div style={{fontWeight:'700',color:C.dark,marginBottom:'12px',fontSize:'14px'}}>Registros recientes</div>
           <table style={{width:'100%',borderCollapse:'collapse',fontSize:'13px'}}>
@@ -579,7 +626,7 @@ function VentasTab() {
               ))}
             </tr></thead>
             <tbody>
-              {records.map(r=>(
+              {pageRecords.map(r=>(
                 <tr key={r.id} style={{borderBottom:`1px solid ${C.sageLight}`}}>
                   <td style={{padding:'8px 10px',color:C.dark}}>{r.project}</td>
                   <td style={{padding:'8px 10px',color:'#6B7280'}}>{fmt(r.date)}</td>
@@ -591,8 +638,10 @@ function VentasTab() {
               ))}
             </tbody>
           </table>
+          <Paginator page={page} totalPages={totalPages} totalRecords={records.length} pageSize={PAGE_SIZE} onPage={setPage}/>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
