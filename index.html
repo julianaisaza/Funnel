@@ -171,9 +171,10 @@ function Spinner() {
 
 // Navegador de páginas: muestra « ‹ "X de N" › » y rango de registros visible
 function Paginator({ page, totalPages, totalRecords, pageSize, onPage }) {
-  if (totalPages <= 1) return null;
+  if (totalRecords === 0) return null;
   const from = page*pageSize + 1;
   const to   = Math.min((page+1)*pageSize, totalRecords);
+  const singlePage = totalPages <= 1;
   const btn  = (disabled) => ({
     background: disabled ? '#F3F4F6' : C.sageLight,
     border: `1px solid ${disabled ? '#E5E7EB' : C.sage}`,
@@ -184,15 +185,17 @@ function Paginator({ page, totalPages, totalRecords, pageSize, onPage }) {
   return (
     <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:'12px',flexWrap:'wrap',gap:'8px'}}>
       <div style={{fontSize:'12px',color:'#6B7280'}}>
-        Mostrando <strong>{from}–{to}</strong> de <strong>{totalRecords}</strong>
+        Mostrando <strong>{from}–{to}</strong> de <strong>{totalRecords}</strong> registros
       </div>
-      <div style={{display:'flex',alignItems:'center',gap:'4px'}}>
-        <button onClick={()=>onPage(0)}             disabled={page===0}             style={btn(page===0)}             title="Primera página">«</button>
-        <button onClick={()=>onPage(page-1)}        disabled={page===0}             style={btn(page===0)}             title="Anterior">‹</button>
-        <span style={{fontSize:'13px',color:C.dark,fontWeight:'700',padding:'0 10px'}}>Página {page+1} de {totalPages}</span>
-        <button onClick={()=>onPage(page+1)}        disabled={page>=totalPages-1}   style={btn(page>=totalPages-1)}   title="Siguiente">›</button>
-        <button onClick={()=>onPage(totalPages-1)}  disabled={page>=totalPages-1}   style={btn(page>=totalPages-1)}   title="Última página">»</button>
-      </div>
+      {!singlePage && (
+        <div style={{display:'flex',alignItems:'center',gap:'4px'}}>
+          <button onClick={()=>onPage(0)}             disabled={page===0}             style={btn(page===0)}             title="Primera página">«</button>
+          <button onClick={()=>onPage(page-1)}        disabled={page===0}             style={btn(page===0)}             title="Anterior">‹</button>
+          <span style={{fontSize:'13px',color:C.dark,fontWeight:'700',padding:'0 10px'}}>Página {page+1} de {totalPages}</span>
+          <button onClick={()=>onPage(page+1)}        disabled={page>=totalPages-1}   style={btn(page>=totalPages-1)}   title="Siguiente">›</button>
+          <button onClick={()=>onPage(totalPages-1)}  disabled={page>=totalPages-1}   style={btn(page>=totalPages-1)}   title="Última página">»</button>
+        </div>
+      )}
     </div>
   );
 }
