@@ -341,7 +341,7 @@ function FunnelBar({label,value,max,color,pctLabel}) {
 }
 
 function VisitasTab() {
-  const [project,setProject]         = useState(PROJECTS[0]);
+  const [project,setProject]         = useState('');
   const [date,setDate]               = useState(today());
   const [compradores,setCompradores] = useState(0);
   const [prospectos,setProspectos]   = useState(0);
@@ -354,6 +354,7 @@ function VisitasTab() {
   const PAGE_SIZE = 20;
 
   const loadRecords = useCallback(async () => {
+    if (!project) { setRecords([]); setLoadingRec(false); return; }
     setLoadingRec(true);
     try { const data=await DB.query('visitas','2020-01-01',today(),project); setRecords(data); setPage(0); }
     catch(e) { console.error(e); }
@@ -362,6 +363,7 @@ function VisitasTab() {
   useEffect(()=>{ loadRecords(); },[loadRecords]);
 
   const save = async () => {
+    if (!project) { alert('Selecciona un proyecto antes de guardar'); return; }
     setSaving(true);
     try {
       await DB.add('visitas',{project,date,compradores:Number(compradores),prospectos:Number(prospectos)});
@@ -385,8 +387,10 @@ function VisitasTab() {
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'16px',marginBottom:'16px'}}>
           <div>
             <label style={{fontSize:'13px',fontWeight:'600',color:C.dark,display:'block',marginBottom:'6px'}}>Proyecto</label>
-            <select value={project} onChange={e=>setProject(e.target.value)} style={{...inp,background:'white'}}>
-              {PROJECTS.map(p=><option key={p}>{p}</option>)}
+            <select value={project} onChange={e=>setProject(e.target.value)}
+              style={{...inp,background:'white',borderColor:project?C.sage:'#DC2626',borderWidth:'2px'}}>
+              <option value="">— Selecciona un proyecto —</option>
+              {PROJECTS.map(p=><option key={p} value={p}>{p}</option>)}
             </select>
           </div>
           <div>
@@ -406,13 +410,13 @@ function VisitasTab() {
               style={{...inp,fontSize:'20px',fontWeight:'700',textAlign:'center'}}/>
           </div>
         </div>
-        <button onClick={save} disabled={saving} style={{width:'100%',padding:'14px',
-          background:saved?C.medium:saving?'#6B9FAC':C.dark,color:'white',border:'none',
-          borderRadius:'10px',fontSize:'15px',fontWeight:'700',cursor:saving?'not-allowed':'pointer',transition:'background 0.2s'}}>
-          {saved?'¡Guardado!':saving?'Guardando...':'Guardar Visitas del Dia'}
+        <button onClick={save} disabled={saving||!project} style={{width:'100%',padding:'14px',
+          background:saved?C.medium:(saving||!project)?'#6B9FAC':C.dark,color:'white',border:'none',
+          borderRadius:'10px',fontSize:'15px',fontWeight:'700',cursor:(saving||!project)?'not-allowed':'pointer',transition:'background 0.2s',opacity:!project?0.65:1}}>
+          {saved?'¡Guardado!':saving?'Guardando...':!project?'Selecciona un proyecto':'Guardar Visitas del Dia'}
         </button>
       </div>
-      <HabitCalendar project={project} refreshKey={refreshKey}/>
+      {project && <HabitCalendar project={project} refreshKey={refreshKey}/>}
       {loadingRec ? <Spinner/> : records.length>0 && (() => {
         const totalPages  = Math.ceil(records.length / PAGE_SIZE);
         const pageRecords = records.slice(page*PAGE_SIZE, (page+1)*PAGE_SIZE);
@@ -450,7 +454,7 @@ function VisitasTab() {
 }
 
 function LeadsTab() {
-  const [project,setProject]       = useState(PROJECTS[0]);
+  const [project,setProject]       = useState('');
   const [date,setDate]             = useState(today());
   const [keybe,setKeybe]           = useState(0);
   const [sico,setSico]             = useState(0);
@@ -463,6 +467,7 @@ function LeadsTab() {
   const PAGE_SIZE = 20;
 
   const loadRecords = useCallback(async () => {
+    if (!project) { setRecords([]); setLoadingRec(false); return; }
     setLoadingRec(true);
     try { const data=await DB.query('leads','2020-01-01',today(),project); setRecords(data); setPage(0); }
     catch(e) { console.error(e); }
@@ -471,6 +476,7 @@ function LeadsTab() {
   useEffect(()=>{ loadRecords(); },[loadRecords]);
 
   const save = async () => {
+    if (!project) { alert('Selecciona un proyecto antes de guardar'); return; }
     setSaving(true);
     try {
       await DB.add('leads',{project,date,keybe:Number(keybe),sico:Number(sico)});
@@ -494,8 +500,10 @@ function LeadsTab() {
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'16px',marginBottom:'16px'}}>
           <div>
             <label style={{fontSize:'13px',fontWeight:'600',color:C.dark,display:'block',marginBottom:'6px'}}>Proyecto</label>
-            <select value={project} onChange={e=>setProject(e.target.value)} style={{...inp,background:'white'}}>
-              {PROJECTS.map(p=><option key={p}>{p}</option>)}
+            <select value={project} onChange={e=>setProject(e.target.value)}
+              style={{...inp,background:'white',borderColor:project?C.sage:'#DC2626',borderWidth:'2px'}}>
+              <option value="">— Selecciona un proyecto —</option>
+              {PROJECTS.map(p=><option key={p} value={p}>{p}</option>)}
             </select>
           </div>
           <div>
@@ -515,13 +523,13 @@ function LeadsTab() {
               style={{...inp,fontSize:'20px',fontWeight:'700',textAlign:'center'}}/>
           </div>
         </div>
-        <button onClick={save} disabled={saving} style={{width:'100%',padding:'14px',
-          background:saved?C.medium:saving?'#6B9FAC':C.dark,color:'white',border:'none',
-          borderRadius:'10px',fontSize:'15px',fontWeight:'700',cursor:saving?'not-allowed':'pointer',transition:'background 0.2s'}}>
-          {saved?'¡Guardado!':saving?'Guardando...':'Guardar Prospectos del Dia'}
+        <button onClick={save} disabled={saving||!project} style={{width:'100%',padding:'14px',
+          background:saved?C.medium:(saving||!project)?'#6B9FAC':C.dark,color:'white',border:'none',
+          borderRadius:'10px',fontSize:'15px',fontWeight:'700',cursor:(saving||!project)?'not-allowed':'pointer',transition:'background 0.2s',opacity:!project?0.65:1}}>
+          {saved?'¡Guardado!':saving?'Guardando...':!project?'Selecciona un proyecto':'Guardar Prospectos del Dia'}
         </button>
       </div>
-      <HabitCalendar project={project} refreshKey={refreshKey}/>
+      {project && <HabitCalendar project={project} refreshKey={refreshKey}/>}
       {loadingRec ? <Spinner/> : records.length>0 && (() => {
         const totalPages  = Math.ceil(records.length / PAGE_SIZE);
         const pageRecords = records.slice(page*PAGE_SIZE, (page+1)*PAGE_SIZE);
@@ -560,7 +568,7 @@ function LeadsTab() {
 }
 
 function VentasTab() {
-  const [project,setProject] = useState(PROJECTS[0]);
+  const [project,setProject] = useState('');
   const [date,setDate]       = useState(weekStart());
   const [ventas,setVentas]   = useState(0);
   const [saving,setSaving]   = useState(false);
@@ -571,6 +579,7 @@ function VentasTab() {
   const PAGE_SIZE = 20;
 
   const loadRecords = useCallback(async () => {
+    if (!project) { setRecords([]); setLoading(false); return; }
     setLoading(true);
     try { const data=await DB.query('ventas','2020-01-01',today(),project); setRecords(data); setPage(0); }
     catch(e) { console.error(e); }
@@ -579,6 +588,7 @@ function VentasTab() {
   useEffect(()=>{ loadRecords(); },[loadRecords]);
 
   const save = async () => {
+    if (!project) { alert('Selecciona un proyecto antes de guardar'); return; }
     setSaving(true);
     try {
       await DB.add('ventas',{project,date,ventas:Number(ventas)});
@@ -596,8 +606,10 @@ function VentasTab() {
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'16px',marginBottom:'16px'}}>
           <div>
             <label style={{fontSize:'13px',fontWeight:'600',color:C.dark,display:'block',marginBottom:'6px'}}>Proyecto</label>
-            <select value={project} onChange={e=>setProject(e.target.value)} style={{...inp,background:'white'}}>
-              {PROJECTS.map(p=><option key={p}>{p}</option>)}
+            <select value={project} onChange={e=>setProject(e.target.value)}
+              style={{...inp,background:'white',borderColor:project?C.sage:'#DC2626',borderWidth:'2px'}}>
+              <option value="">— Selecciona un proyecto —</option>
+              {PROJECTS.map(p=><option key={p} value={p}>{p}</option>)}
             </select>
           </div>
           <div>
@@ -610,10 +622,10 @@ function VentasTab() {
           <input type="number" min="0" value={ventas} onChange={e=>setVentas(e.target.value)}
             style={{...inp,fontSize:'28px',fontWeight:'700',textAlign:'center',padding:'12px'}}/>
         </div>
-        <button onClick={save} disabled={saving} style={{width:'100%',padding:'14px',
-          background:saved?C.medium:saving?'#6B9FAC':C.dark,color:'white',border:'none',
-          borderRadius:'10px',fontSize:'15px',fontWeight:'700',cursor:saving?'not-allowed':'pointer'}}>
-          {saved?'¡Guardado!':saving?'Guardando...':'Guardar Cierre Semanal'}
+        <button onClick={save} disabled={saving||!project} style={{width:'100%',padding:'14px',
+          background:saved?C.medium:(saving||!project)?'#6B9FAC':C.dark,color:'white',border:'none',
+          borderRadius:'10px',fontSize:'15px',fontWeight:'700',cursor:(saving||!project)?'not-allowed':'pointer',opacity:!project?0.65:1}}>
+          {saved?'¡Guardado!':saving?'Guardando...':!project?'Selecciona un proyecto':'Guardar Cierre Semanal'}
         </button>
       </div>
       {loading ? <Spinner/> : records.length>0 && (() => {
