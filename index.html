@@ -978,21 +978,24 @@ function DashboardTab({ onGoToMetas }) {
               Aún no hay prospectos, visitas ni ventas registradas en los últimos 12 meses para este proyecto.
             </div>
           ) : (() => {
-            // Dimensiones del SVG
-            const W=760, H=260, padL=40, padR=40, padT=20, padB=48;
+            // Dos paneles apilados que comparten eje X (meses):
+            //   Panel superior → barras (Prospectos + Visitas)
+            //   Panel inferior → línea de Ventas
+            const W=760, padL=40, padR=12;
+            const padT=20, upperH=170, gap=18, lowerH=70, padB=48;
+            const H = padT + upperH + gap + lowerH + padB; // = 20+170+18+70+48 = 326
             const chartW = W - padL - padR;
-            const chartH = H - padT - padB;
-            const groupW = chartW / 12;        // ancho asignado a cada mes
-            const barW   = (groupW - 10) / 2;  // 2 barras + separación de 10
-            // Eje Y izquierdo: prospectos + visitas
+            const groupW = chartW / 12;
+            const barW   = (groupW - 10) / 2;
+            // Escala eje Y superior (barras)
             const niceMax  = twelveMax <= 10 ? Math.ceil(twelveMax/2)*2 : Math.ceil(twelveMax/10)*10;
             const yTicks   = [0, Math.round(niceMax/2), niceMax];
-            const y        = (v) => padT + chartH - (v / (niceMax||1)) * chartH;
-            // Eje Y derecho: ventas (escala independiente)
+            const y        = (v) => padT + upperH - (v / (niceMax||1)) * upperH;
+            // Escala eje Y inferior (línea ventas)
             const niceMaxV = twelveVentasMax <= 10 ? Math.max(2, Math.ceil(twelveVentasMax/2)*2) : Math.ceil(twelveVentasMax/5)*5;
-            const yV       = (v) => padT + chartH - (v / (niceMaxV||1)) * chartH;
-            const yTicksV  = [0, Math.round(niceMaxV/2), niceMaxV];
-            // Puntos de la línea de ventas (centrados en cada grupo)
+            const yTicksV  = [0, niceMaxV];
+            const lowerTop = padT + upperH + gap;
+            const yV       = (v) => lowerTop + lowerH - (v / (niceMaxV||1)) * lowerH;
             const linePoints = twelveSeries.map((d,i) => {
               const cx = padL + i*groupW + groupW/2 - 5;
               return { cx, cy: yV(d.ventas), v: d.ventas, label: d.label, yearShort: d.yearShort, ym: d.ym };
@@ -1000,25 +1003,20 @@ function DashboardTab({ onGoToMetas }) {
             const pathD = linePoints.map((p,i) => `${i===0?'M':'L'} ${p.cx} ${p.cy}`).join(' ');
             return (
               <div style={{width:'100%',overflowX:'auto'}}>
-                <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMinYMid meet" style={{width:'100%',minWidth:'600px',height:'260px',display:'block'}}>
-                  {/* Líneas de referencia Y izq + etiquetas */}
+                <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMinYMid meet" style={{width:'100%',minWidth:'600px',height:`${H}px`,display:'block'}}>
+                  {/* === Panel superior: BARRAS === */}
                   {yTicks.map(t => (
                     <g key={'l'+t}>
                       <line x1={padL} y1={y(t)} x2={W-padR} y2={y(t)} stroke="#E5E7EB" strokeWidth="1" strokeDasharray={t===0?'':'3 3'}/>
-                      <text x={padL-6} y={y(t)+4} textAnchor="end" fontSize="10" fill={C.medium}>{t}</text>
+                      <text x={padL-6} y={y(t)+4} textAnchor="end" fontSize="10" fill="#9CA3AF">{t}</text>
                     </g>
                   ))}
-                  {/* Etiquetas eje Y derecho (ventas) */}
-                  {yTicksV.map(t => (
-                    <text key={'r'+t} x={W-padR+6} y={yV(t)+4} textAnchor="start" fontSize="10" fill="#D97706">{t}</text>
-                  ))}
-                  {/* Barras por mes */}
                   {twelveSeries.map((d,i) => {
                     const gx = padL + i*groupW + 5;
                     const bpx = gx;
                     const bvx = gx + barW;
-                    const bph = chartH - (y(d.prospectos) - padT);
-                    const bvh = chartH - (y(d.visitas) - padT);
+                    const bph = upperH - (y(d.prospectos) - padT);
+                    const bvh = upperH - (y(d.visitas) - padT);
                     return (
                       <g key={d.ym}>
                         <rect x={bpx} y={y(d.prospectos)} width={barW} height={Math.max(0,bph)} fill={C.light} rx="2">
@@ -1029,21 +1027,44 @@ function DashboardTab({ onGoToMetas }) {
                         </rect>
                         {d.prospectos>0 && <text x={bpx+barW/2} y={y(d.prospectos)-3} textAnchor="middle" fontSize="9" fill={C.dark} fontWeight="700">{d.prospectos}</text>}
                         {d.visitas>0    && <text x={bvx+barW/2} y={y(d.visitas)-3}    textAnchor="middle" fontSize="9" fill={C.dark} fontWeight="700">{d.visitas}</text>}
-                        <text x={gx+groupW/2-5} y={padT+chartH+16} textAnchor="middle" fontSize="11" fill={C.dark} fontWeight="600">{d.label}</text>
-                        <text x={gx+groupW/2-5} y={padT+chartH+30} textAnchor="middle" fontSize="9"  fill="#9CA3AF">'{d.yearShort}</text>
                       </g>
                     );
                   })}
-                  {/* Línea de ventas (sobre las barras) */}
+
+                  {/* === Panel inferior: LÍNEA DE VENTAS === */}
+                  {/* Fondo sutil del panel + línea separadora */}
+                  <rect x={padL} y={lowerTop} width={chartW} height={lowerH} fill="#FFFBEB" rx="4"/>
+                  {/* Etiqueta "VENTAS" */}
+                  <text x={padL+4} y={lowerTop+12} fontSize="9" fill="#D97706" fontWeight="800" letterSpacing="0.5">VENTAS</text>
+                  {/* Ticks del eje Y inferior */}
+                  {yTicksV.map(t => (
+                    <g key={'v'+t}>
+                      <line x1={padL} y1={yV(t)} x2={W-padR} y2={yV(t)} stroke="#F3E8CA" strokeWidth="1" strokeDasharray={t===0?'':'3 3'}/>
+                      <text x={padL-6} y={yV(t)+4} textAnchor="end" fontSize="10" fill="#D97706">{t}</text>
+                    </g>
+                  ))}
+                  {/* Línea + puntos */}
                   <path d={pathD} fill="none" stroke="#D97706" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round"/>
                   {linePoints.map(p => (
                     <g key={'pt'+p.ym}>
                       <circle cx={p.cx} cy={p.cy} r="4" fill="white" stroke="#D97706" strokeWidth="2">
                         <title>{`${p.label} ${p.yearShort}: ${p.v} ventas`}</title>
                       </circle>
-                      {p.v>0 && <text x={p.cx} y={p.cy-8} textAnchor="middle" fontSize="10" fill="#D97706" fontWeight="800">{p.v}</text>}
+                      {p.v>0 && <text x={p.cx} y={p.cy-7} textAnchor="middle" fontSize="10" fill="#D97706" fontWeight="800">{p.v}</text>}
                     </g>
                   ))}
+
+                  {/* === Eje X compartido: etiquetas de meses === */}
+                  {twelveSeries.map((d,i) => {
+                    const gx = padL + i*groupW + 5;
+                    const xLabel = gx+groupW/2-5;
+                    return (
+                      <g key={'xl'+d.ym}>
+                        <text x={xLabel} y={lowerTop+lowerH+18} textAnchor="middle" fontSize="11" fill={C.dark} fontWeight="600">{d.label}</text>
+                        <text x={xLabel} y={lowerTop+lowerH+32} textAnchor="middle" fontSize="9"  fill="#9CA3AF">'{d.yearShort}</text>
+                      </g>
+                    );
+                  })}
                 </svg>
               </div>
             );
